@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Channing / Proxima BYSITE CHECKER</title>
+<style>
+:root{--line:#64748b;--grid:#e3e9f1;--blue:#03a9e7;--ink:#142237}
+*{box-sizing:border-box}
+html,body{min-height:100%;}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#eef3f8;font-size:15px}
+.frame{width:100%;min-height:100vh;padding:14px 18px 18px;margin:0 auto;display:flex;flex-direction:column;gap:0}
+.title{background:linear-gradient(180deg,#23c4f4,#009ddb);border:1px solid #008fc1;border-radius:9px 9px 0 0;text-align:center;font-weight:800;letter-spacing:.7px;font-size:20px;line-height:46px;color:#fff;box-shadow:0 3px 10px #132b461a}
+.scroller{overflow-x:auto;width:100%;background:white;box-shadow:0 2px 10px #132b460e;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;table-layout:fixed;width:100%;min-width:1180px}
+.editor th,.editor td{border:1px solid var(--line);height:49px;padding:7px 3px;font-weight:normal;text-align:center;white-space:nowrap;overflow:hidden}
+.editor tr:first-child th.site{font-size:clamp(13px,1.05vw,17px);color:#07375c;font-weight:800;overflow:visible;padding:8px 1px;letter-spacing:-.25px}
+.editor tr:first-child th{background:#f0f7fc;font-weight:700}
+.editor th.control{width:105px;text-align:center;vertical-align:middle;padding:6px;background:#f8fafc!important}
+.editor th.row-name{width:82px;color:#07375c;font-size:16px;font-weight:800;vertical-align:middle}
+.editor th.site{width:calc((100% - 187px)/16);min-width:61px}
+.editor tr:not(:first-child)>th:not(.control){text-align:left;font-weight:700;background:#f6f9fc;padding-left:14px}
+.editor td[contenteditable]{outline:0;background:white;font:600 15px Arial,Helvetica,sans-serif}
+.editor td[contenteditable]:focus,.paste-area:focus{background:#f0faff;outline:2px solid #009acb;outline-offset:-2px}
+.action{margin:auto;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:52px;border:1px solid transparent;border-radius:8px;font:700 14px Arial,Helvetica,sans-serif;letter-spacing:.1px;cursor:pointer;box-shadow:0 3px 0 #0003,0 4px 9px #0002;transition:transform .12s,box-shadow .12s,filter .12s;user-select:none}
+.action:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 0 #0003,0 6px 12px #0002}
+.action:active{transform:translateY(2px);box-shadow:0 1px 0 #0003,0 2px 4px #0002}
+.action:focus-visible{outline:3px solid #ffbb45;outline-offset:2px}
+#examine{background:linear-gradient(180deg,#1596ef,#0866c7);border-color:#0758a8;color:white}
+#clear{background:linear-gradient(180deg,#fff,#e9eff6);border-color:#9aabbc;color:#32465e}
+.action .icon{font-size:17px;line-height:1}
+.separator{height:22px;background:white;border-bottom:1px solid #dbe3ed}
+.input-bar{display:flex;align-items:center;min-height:54px;gap:12px;padding:8px 12px;border-bottom:2px solid #d7e1ec;background:#f9fbfd}
+.input-bar label{font-weight:700;font-size:16px}
+.input-bar select{font-size:16px;font-weight:700;min-width:145px;border:2px solid #0875c9;border-radius:8px;background:#fff;height:42px;padding:0 12px;color:#08477b;cursor:pointer;box-shadow:0 2px 5px #0001}
+.input-bar select:focus-visible{outline:3px solid #63c5ff;outline-offset:2px}
+.input-bar .hint{font-size:13px;color:#5b7088}
+.paste-wrap{border:2px solid #95a8bc;border-radius:0 0 8px 8px;height:clamp(320px,calc(100vh - 360px),1000px);min-height:350px;flex:none;position:relative;overflow:hidden;background-color:white;background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),linear-gradient(to bottom,var(--grid) 1px,transparent 1px);background-size:calc(100% / 16) 35px}
+.paste-area{resize:none;display:block;background:transparent;border:0;outline:0;width:100%;height:100%;padding:12px 14px;font:15px/35px Consolas,monospace;white-space:pre;overflow:scroll;overflow-wrap:normal;word-wrap:normal;color:#15263a;tab-size:14;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;overscroll-behavior:contain}
+.message{min-height:34px;font-size:14px;padding:9px 8px 0;font-weight:600;color:#314861}
+.bad{background:#ffe2e2!important;color:#a00000;font-weight:bold}
+.good{background:#e5f8e8!important}
+@media(min-width:1700px){.frame{padding:18px 24px 22px}.editor th,.editor td{height:55px}.editor td[contenteditable]{font-size:16px}.action{min-height:60px}}
+@media(max-width:1150px){.frame{padding:8px}.editor th,.editor td{height:44px;font-size:14px}.editor th.control{width:90px}.editor th.row-name{width:76px}.editor th.site{width:calc((100% - 166px)/16)}.editor tr:first-child th.site{font-size:14px}.action{min-height:46px;font-size:12px;gap:3px}}
+@media(max-width:600px){.frame{padding:4px}.title{font-size:17px;line-height:40px}.editor th.control{width:108px}.editor th.row-name{width:82px;color:#07375c;font-size:16px;font-weight:800;vertical-align:middle}.input-bar{flex-wrap:wrap;gap:6px;padding:8px}.input-bar .hint{width:100%;font-size:12px}.paste-area{min-height:300px}.action{font-size:13px}}
+@media(max-width:600px){.paste-wrap{height:45vh;min-height:270px}.editor{min-width:1180px}.scroller{overscroll-behavior-x:contain}.action{touch-action:manipulation}}
+/* Product switcher sits above the result grid. */
+.product-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;background:#fff;border:1px solid #d6e1ed;border-top:0}
+.product-bar label{font-size:16px;font-weight:800;color:#143c5c}
+.product-bar select{height:45px;min-width:280px;max-width:100%;border:2px solid #0875c9;border-radius:8px;background:white;color:#08477b;padding:0 12px;font-size:16px;font-weight:700;cursor:pointer}
+.product-bar .product-hint{font-size:13px;color:#506780}
+.editor.proxima{min-width:940px}
+.editor.proxima th.site{width:calc((100% - 187px)/12)}
+.editor [hidden]{display:none!important}
+@media(max-width:1150px){.editor.proxima th.site{width:calc((100% - 166px)/12)}}
+@media(max-width:600px){.product-bar{padding:10px;gap:8px}.product-bar select{width:100%;min-width:0}.product-bar .product-hint{width:100%}}
+/* Excel-style actual input cells; tabs and newlines become separate cells. */
+.paste-wrap{height:clamp(320px,calc(100vh - 360px),1000px);min-height:300px;overflow:auto!important;background:#fff!important;border:2px solid #95a8bc;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.input-grid{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;min-width:100%;font:14px Arial,Helvetica,sans-serif}
+.input-grid th,.input-grid td{width:100px;min-width:100px;height:34px;border-right:1px solid #dce4ef;border-bottom:1px solid #dce4ef;padding:0 7px;white-space:nowrap;text-align:left;overflow:hidden;text-overflow:ellipsis}
+.input-grid thead th{background:#eaf2fc;position:sticky;top:0;z-index:2;text-align:center;font-weight:700;color:#17446e}
+.input-grid .row-num{background:#edf3f9;position:sticky;left:0;z-index:1;text-align:center;width:44px;min-width:44px;font-weight:700;color:#627388}
+.input-grid thead .row-num{z-index:3}
+.input-grid td{background:#fff;outline:none;cursor:text}
+.input-grid td:focus{background:#eaf9ff;outline:2px solid #0b86d5;outline-offset:-2px;position:relative;z-index:1}
+@media(max-width:600px){.input-grid td,.input-grid thead th{width:100px;min-width:100px;height:38px}.input-grid .row-num{width:40px;min-width:40px}}
+/* Results remain visible and readable, including multiple matching Sbins. */
+.editor td[data-row="bysite"]{font-weight:800;font-size:12px;letter-spacing:-.15px}
+/* Sbin values must never be clipped: row height grows to fit all matches. */
+.editor td[data-row="sbin"]{
+  font-size:12px;
+  line-height:1.5;
+  white-space:normal;
+  overflow:visible;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  text-overflow:clip;
+  padding:9px 6px;
+  height:auto;
+  min-height:49px;
+  vertical-align:middle;
+}
+/* Every site cell grows together with the tallest Sbin cell. */
+.editor tr:has(td[data-row="sbin"])>th{height:auto;vertical-align:middle}
+/* Preserve button centers even when the Sbin row grows. */
+.editor th.control{vertical-align:middle}
+.editor th.control .action{max-width:100%}
+@media(max-width:600px){
+  .editor td[data-row="sbin"]{font-size:12px;line-height:1.55;padding:8px 5px}
+}
+
+.editor td.bad{background:#ffe2e2!important;color:#a00000!important}
+.editor td.good{background:#e4f8e9!important;color:#136b32!important}
+/* Proxima-only result guidance and safe product-validation feedback. */
+.retest-alert{border:2px solid #b91c1c;background:#fff0f0;color:#861818;border-radius:9px;padding:13px 16px;margin:10px 0 2px;line-height:1.5}
+.retest-alert strong{display:block;font-size:16px;margin-bottom:3px}
+.retest-alert .trigger-detail{margin-top:7px;font-size:13px;overflow-wrap:anywhere}
+.message.validation-error{background:#fff1f2;color:#991b1b;border:1px solid #fecaca;border-radius:7px;padding:11px 12px;margin-top:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="title">BYSITE CHECKER</div>
+  <div class="product-bar">
+    <label for="product">Product</label>
+    <select id="product" aria-label="Select BYSITE CHECKER product">
+      <option value="channing" selected>Channing BySite Checker (16 Sites)</option>
+      <option value="proxima">Proxima BySite Checker (12 Sites)</option>
+    </select>
+    <span class="product-hint">Changing product clears pasted data, wafer selection, and results.</span>
+  </div>
+  <div class="retest-alert" id="retest-alert" role="alert" hidden>
+    <strong>⚠ RETEST REQUIRED — PROXIMA</strong>
+    <div>Need to retest all bad bins except can not RT bin.</div>
+    <div class="trigger-detail" id="retest-detail"></div>
+  </div>
+  <div class="scroller">
+    <table class="editor" aria-label="BySite checker data">
+      <tbody><tr><th class="control" rowspan="2"><button type="button" class="action" id="examine"><span class="icon" aria-hidden="true">✓</span>Examine</button></th><th class="row-name" id="wafer-heading">W#</th><th class="site">Site0</th><th class="site">Site1</th><th class="site">Site2</th><th class="site">Site3</th><th class="site">Site4</th><th class="site">Site5</th><th class="site">Site6</th><th class="site">Site7</th><th class="site">Site8</th><th class="site">Site9</th><th class="site">Site10</th><th class="site">Site11</th><th class="site">Site12</th><th class="site">Site13</th><th class="site">Site14</th><th class="site">Site15</th></tr>
+        <tr><th>BySite</th><td contenteditable="true" data-row="bysite" data-site="0"></td><td contenteditable="true" data-row="bysite" data-site="1"></td><td contenteditable="true" data-row="bysite" data-site="2"></td><td contenteditable="true" data-row="bysite" data-site="3"></td><td contenteditable="true" data-row="bysite" data-site="4"></td><td contenteditable="true" data-row="bysite" data-site="5"></td><td contenteditable="true" data-row="bysite" data-site="6"></td><td contenteditable="true" data-row="bysite" data-site="7"></td><td contenteditable="true" data-row="bysite" data-site="8"></td><td contenteditable="true" data-row="bysite" data-site="9"></td><td contenteditable="true" data-row="bysite" data-site="10"></td><td contenteditable="true" data-row="bysite" data-site="11"></td><td contenteditable="true" data-row="bysite" data-site="12"></td><td contenteditable="true" data-row="bysite" data-site="13"></td><td contenteditable="true" data-row="bysite" data-site="14"></td><td contenteditable="true" data-row="bysite" data-site="15"></td></tr>
+        <tr><th class="control" rowspan="2"><button type="button" class="action" id="clear"><span class="icon" aria-hidden="true">↺</span>Clear</button></th><th>Max Qty</th><td contenteditable="true" data-row="max" data-site="0"></td><td contenteditable="true" data-row="max" data-site="1"></td><td contenteditable="true" data-row="max" data-site="2"></td><td contenteditable="true" data-row="max" data-site="3"></td><td contenteditable="true" data-row="max" data-site="4"></td><td contenteditable="true" data-row="max" data-site="5"></td><td contenteditable="true" data-row="max" data-site="6"></td><td contenteditable="true" data-row="max" data-site="7"></td><td contenteditable="true" data-row="max" data-site="8"></td><td contenteditable="true" data-row="max" data-site="9"></td><td contenteditable="true" data-row="max" data-site="10"></td><td contenteditable="true" data-row="max" data-site="11"></td><td contenteditable="true" data-row="max" data-site="12"></td><td contenteditable="true" data-row="max" data-site="13"></td><td contenteditable="true" data-row="max" data-site="14"></td><td contenteditable="true" data-row="max" data-site="15"></td></tr>
+        <tr><th>Sbin</th><td contenteditable="true" data-row="sbin" data-site="0"></td><td contenteditable="true" data-row="sbin" data-site="1"></td><td contenteditable="true" data-row="sbin" data-site="2"></td><td contenteditable="true" data-row="sbin" data-site="3"></td><td contenteditable="true" data-row="sbin" data-site="4"></td><td contenteditable="true" data-row="sbin" data-site="5"></td><td contenteditable="true" data-row="sbin" data-site="6"></td><td contenteditable="true" data-row="sbin" data-site="7"></td><td contenteditable="true" data-row="sbin" data-site="8"></td><td contenteditable="true" data-row="sbin" data-site="9"></td><td contenteditable="true" data-row="sbin" data-site="10"></td><td contenteditable="true" data-row="sbin" data-site="11"></td><td contenteditable="true" data-row="sbin" data-site="12"></td><td contenteditable="true" data-row="sbin" data-site="13"></td><td contenteditable="true" data-row="sbin" data-site="14"></td><td contenteditable="true" data-row="sbin" data-site="15"></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="separator"></div>
+  <div class="input-bar"><label for="wafer">W# (Optional)</label><select id="wafer" aria-label="Choose wafer W#1 through W#25"><option value="" selected>Choose wafer…</option><option value="W#1">W#1</option><option value="W#2">W#2</option><option value="W#3">W#3</option><option value="W#4">W#4</option><option value="W#5">W#5</option><option value="W#6">W#6</option><option value="W#7">W#7</option><option value="W#8">W#8</option><option value="W#9">W#9</option><option value="W#10">W#10</option><option value="W#11">W#11</option><option value="W#12">W#12</option><option value="W#13">W#13</option><option value="W#14">W#14</option><option value="W#15">W#15</option><option value="W#16">W#16</option><option value="W#17">W#17</option><option value="W#18">W#18</option><option value="W#19">W#19</option><option value="W#20">W#20</option><option value="W#21">W#21</option><option value="W#22">W#22</option><option value="W#23">W#23</option><option value="W#24">W#24</option><option value="W#25">W#25</option></select><span class="hint">Wafer optional. Paste the full Excel export into A1: Proxima A–CA (79 columns), Channing A–CY (103 columns). Click Examine to validate and analyze.</span></div>
+  <div class="paste-wrap" id="sheet-scroll" aria-label="Excel input spreadsheet with horizontal and vertical scrolling"><table id="input-grid" class="input-grid" aria-label="Paste Excel data into cells"><thead id="input-head"></thead><tbody id="input-body"></tbody></table></div>
+  <div class="message" id="status" role="status"></div>
+</div>
+<script>
+(function(){
+'use strict';
+const wafer=document.getElementById('wafer');
+const product=document.getElementById('product');
+const editor=document.querySelector('.editor');
+const header=document.getElementById('wafer-heading');
+const status=document.getElementById('status');
+const retestAlert=document.getElementById('retest-alert');
+const retestDetail=document.getElementById('retest-detail');
+const upper=[...document.querySelectorAll('.editor [data-row]')];
+const sheet=document.getElementById('input-grid');
+const body=document.getElementById('input-body');
+const head=document.getElementById('input-head');
+const scroll=document.getElementById('sheet-scroll');
+const rowsSaved={};
+let selectedBefore='';
+let rowCount=32, colCount=16;
+let pasteShape=null; // Exact size of the single Excel rectangular paste used for product verification.
+const activeSiteCount=()=>product.value==='proxima'?12:16;
+let matrix=[];
+function letter(n){let out='';for(n++;n;n=Math.floor((n-1)/26)){out=String.fromCharCode(65+(n-1)%26)+out}return out}
+function ensure(r,c){
+  let changed=false;
+  while(rowCount<=r){rowCount+=16;changed=true}
+  while(colCount<=c){colCount+=8;changed=true}
+  while(matrix.length<rowCount)matrix.push([]);
+  if(changed)build();
+}
+function build(){
+  head.replaceChildren();
+  const heading=document.createElement('tr');
+  let corner=document.createElement('th');corner.className='row-num';corner.textContent='#';heading.append(corner);
+  for(let c=0;c<colCount;c++){const th=document.createElement('th');th.textContent=letter(c);heading.append(th)}
+  head.append(heading);
+  const frag=document.createDocumentFragment();
+  for(let r=0;r<rowCount;r++){
+    const tr=document.createElement('tr');let num=document.createElement('th');num.className='row-num';num.textContent=r+1;tr.append(num);
+    for(let c=0;c<colCount;c++){
+      const td=document.createElement('td');td.contentEditable='true';td.spellcheck=false;
+      td.dataset.r=r;td.dataset.c=c;
+      td.textContent=(matrix[r]&&matrix[r][c])||'';
+      tr.append(td);
+    }
+    frag.append(tr);
+  }
+  body.replaceChildren(frag);
+}
+function store(){if(!wafer.value)return;rowsSaved[wafer.value]={matrix:matrix.map(row=>row.slice()),upper:upper.map(c=>c.textContent),pasteShape:pasteShape?{...pasteShape}:null}}
+function load(){
+  const v=rowsSaved[wafer.value];
+  matrix=v?v.matrix.map(row=>row.slice()):[];
+  pasteShape=v&&v.pasteShape?{...v.pasteShape}:null;
+  hideRetest();
+  status.classList.remove('validation-error');
+  const savedCols=matrix.reduce((a,row)=>Math.max(a,row.length),0);
+  rowCount=Math.max(32,matrix.length);colCount=Math.max(16,savedCols);
+  while(matrix.length<rowCount)matrix.push([]);
+  build();
+  upper.forEach((cell,i)=>{cell.textContent=v?v.upper[i]||'':'';cell.classList.remove('bad','good')});
+  status.textContent='';
+}
+wafer.addEventListener('change',function(){
+  const next=wafer.value;
+  const previous=selectedBefore;
+  wafer.value=previous;store();selectedBefore=next;
+  wafer.value=next;
+  // When users paste before choosing their first wafer, keep those pasted cells.
+  if(!previous || (Object.keys(rowsSaved).length===0 && matrix.some(row=>row.some(v=>String(v??'').trim()!=='')))){
+    store();
+    status.textContent='Wafer selected. Tap Examine to update the upper table.';
+  } else {
+    load();
+  }
+});
+sheet.addEventListener('input',e=>{
+ const cell=e.target.closest('td[data-r]');if(!cell)return;
+ const r=Number(cell.dataset.r),c=Number(cell.dataset.c);
+ matrix[r][c]=cell.textContent.replace(/\r?\n/g,' ').trim();
+ // Editing inside the original pasted block preserves its known column structure.
+ // Editing outside the block makes its product identity uncertain.
+ if(pasteShape && (r<pasteShape.startR || c<pasteShape.startC || c>=pasteShape.startC+pasteShape.width))pasteShape=null;
+ store();
+});
+function pasteGrid(text,startR,startC){
+  const lines=text.replace(/\r/g,'').replace(/\n$/,'').split('\n').map(line=>line.split('\t'));
+  const widest=Math.max(...lines.map(row=>row.length));
+  const rectangular=lines.every(row=>row.length===widest);
+  // Multiple separate pastes cannot certify that the complete original export was copied.
+  pasteShape=(startR===0 && startC===0 && rectangular && !pasteShape)
+    ? {startR,startC,width:widest,rows:lines.length} : null;
+  status.classList.remove('validation-error');
+  hideRetest();
+  ensure(startR+lines.length-1,startC+widest-1);
+  lines.forEach((line,i)=>line.forEach((value,j)=>{matrix[startR+i][startC+j]=value}));
+  build();store();
+  status.textContent=`Pasted ${lines.length} row(s) × ${widest} column(s) into spreadsheet cells.`;
+  const target=body.querySelector(`[data-r="${startR}"][data-c="${startC}"]`);
+  if(target)target.focus({preventScroll:true});
+}
+sheet.addEventListener('paste',e=>{
+  const target=e.target.closest('td[data-r]');if(!target)return;
+  const text=e.clipboardData&&e.clipboardData.getData('text/plain');
+  if(text===undefined||text===null)return;
+  e.preventDefault();pasteGrid(text,Number(target.dataset.r),Number(target.dataset.c));
+});
+sheet.addEventListener('keydown',e=>{
+ const td=e.target.closest('td[data-r]');if(!td)return;
+ const r=Number(td.dataset.r),c=Number(td.dataset.c);
+ if(e.key==='Enter'||e.key==='Tab'){
+   e.preventDefault();
+   ensure(r+(e.key==='Enter'?1:0),c+(e.key==='Tab'?1:0));
+   const dest=body.querySelector(`[data-r="${r+(e.key==='Enter'?1:0)}"][data-c="${c+(e.key==='Tab'?1:0)}"]`);
+   if(dest)dest.focus();
+ }
+});
+// Site0–Site15 correspond to F, L, R, X, AD, AJ, AP, AV,
+// BB, BH, BN, BT, BZ, CF, CL and CR (zero-based indexes 5, 11, ... 95).
+// The last pasted Excel column is CA (79 columns) for Proxima or CY (103) for Channing.
+const PROXIMA_EXCLUDED=new Set([
+  1,2,1012,1013,1014,1022,1023,1024,1031,1032,1033,1034,
+  1041,1042,1043,1044,1051,1052,1053,1054,1061,1062,1063,1064,
+  1071,1072,1073,1074,1081,1082,1083,1084,
+  8014,8015,8016,8017,8018,8019,8024,8025,8026,8027,8028,8029,
+  9014,9015,9016,9017,9018,9019,9024,9025,9026,9027,9028,9029,
+  9200,9300,9500,9501
+]);
+const CHANNING_EXCLUDED=new Set([1,2]);
+const PROXIMA_MONITORED=new Set([2107,3001,3040,3043,3046,7736,7874,7877,7856,7886,7896]);
+function hideRetest(){retestAlert.hidden=true;retestDetail.textContent='';}
+function clearResults(){
+  upper.forEach(c=>{c.textContent='';c.classList.remove('bad','good');c.title='';});
+  header.textContent='W#';
+  hideRetest();
+}
+function validateProduct(){
+  const expected=product.value==='proxima'?79:103;
+  if(!pasteShape || pasteShape.startR!==0 || pasteShape.startC!==0){
+    return 'DATA STRUCTURE NOT VERIFIED. Paste the complete Excel export as one rectangular block starting at A1, then click Examine. Clear the previous data before pasting a new export.';
+  }
+  if(pasteShape.width!==expected){
+    const found=pasteShape.width;
+    const last=letter(found-1);
+    const detected=found===79?'Proxima':found===103?'Channing':'Unknown product';
+    return `PRODUCT MISMATCH / INVALID DATA. Selected: ${product.value==='proxima'?'Proxima':'Channing'} (expected last column ${letter(expected-1)}, ${expected} columns). Pasted: ${detected} (last column ${last}, ${found} columns). Analysis stopped; verify the selected product and paste the complete Excel export.`;
+  }
+  return '';
+}
+function numericValue(value){
+  const raw=String(value??'').trim().replace(/,/g,'');
+  if(raw==='')return null;
+  const result=Number(raw);
+  return Number.isFinite(result)?result:null;
+}
+function analyze(){
+  let failures=0;
+  const isProxima=product.value==='proxima';
+  const excluded=isProxima?PROXIMA_EXCLUDED:CHANNING_EXCLUDED;
+  const violationDetails=[];
+  for(let site=0;site<activeSiteCount();site++){
+    const qtyColumn=5+site*6;
+    let maximum=null;
+    let monitoredViolation=false;
+    const matchingSbins=[];
+    const violatingSbins=[];
+    for(const row of matrix){
+      const sbin=String(row[0]??'').trim();
+      const binNumber=numericValue(sbin);
+      if(excluded.has(binNumber))continue; // Ignore the entire row for this product.
+      const qty=numericValue(row[qtyColumn]);
+      if(qty===null)continue;
+      // Display all eligible Sbins where the site's quantity is >=20.
+      if(qty>=20 && sbin!=='')matchingSbins.push(sbin);
+      if(maximum===null || qty>maximum)maximum=qty;
+      if(isProxima && qty>=20 && PROXIMA_MONITORED.has(binNumber)){
+        monitoredViolation=true;
+        violatingSbins.push(sbin);
+      }
+    }
+    const bysiteCell=document.querySelector(`[data-row="bysite"][data-site="${site}"]`);
+    const maxCell=document.querySelector(`[data-row="max"][data-site="${site}"]`);
+    const sbinCell=document.querySelector(`[data-row="sbin"][data-site="${site}"]`);
+    const failed=maximum===null || (isProxima?monitoredViolation:maximum>=20);
+    if(failed)failures++;
+    bysiteCell.textContent=failed?'FAILED':'PASSED';
+    bysiteCell.classList.toggle('bad',failed);
+    bysiteCell.classList.toggle('good',!failed);
+    maxCell.textContent=maximum===null?'':String(maximum);
+    // Highlight Max Qty by the numeric threshold, independently from Proxima's monitored-bin failure rule.
+    maxCell.classList.toggle('bad',maximum===null || maximum>=20);
+    maxCell.classList.toggle('good',maximum!==null && maximum<20);
+    sbinCell.textContent=maximum===null?'':matchingSbins.join(', ');
+    sbinCell.title=sbinCell.textContent;
+    if(isProxima && violatingSbins.length){
+      violationDetails.push(`Site${site}: ${[...new Set(violatingSbins)].join(', ')}`);
+    }
+  }
+  hideRetest();
+  if(isProxima && violationDetails.length){
+    retestAlert.hidden=false;
+    retestDetail.textContent='Monitored Sbin violations (Qty ≥ 20): '+violationDetails.join(' | ');
+  }
+  return failures;
+}
+document.getElementById('examine').addEventListener('click',()=>{
+  status.classList.remove('validation-error');
+  const error=validateProduct();
+  if(error){
+    clearResults();
+    status.textContent=error;
+    status.classList.add('validation-error');
+    return;
+  }
+  header.textContent=wafer.value || 'W#';
+  upper.forEach(c=>c.classList.remove('bad','good'));
+  const failureCount=analyze();store();
+  status.textContent=`${product.value==='proxima'?'Proxima':'Channing'} · ${wafer.value || 'No wafer selected'} — ${activeSiteCount()-failureCount} PASSED, ${failureCount} FAILED. ${product.value==='proxima'?'60 excluded Sbins; 11 special monitored Sbins.':'Sbins 1 and 2 excluded.'}`;
+});
+// Replace only the current clipboard contents with an empty string.
+// Browsers may reject clipboard writing (especially when opened via file://).
+// Try the modern API first, then a legacy copy command as a fallback.
+async function blankClipboard(){
+  if(navigator.clipboard && typeof navigator.clipboard.writeText==='function'){
+    try { await navigator.clipboard.writeText(''); return true; } catch(error) { /* fallback below */ }
+  }
+  const previousFocus=document.activeElement;
+  const blank=document.createElement('textarea');
+  blank.value='';
+  blank.setAttribute('aria-hidden','true');
+  blank.setAttribute('readonly','');
+  blank.style.cssText='position:fixed;left:-10000px;top:0;opacity:0;';
+  document.body.appendChild(blank);
+  blank.focus();
+  blank.select();
+  let copied=false;
+  try { copied=!!document.execCommand('copy'); } catch(error) { copied=false; }
+  blank.remove();
+  if(previousFocus && typeof previousFocus.focus==='function'){
+    try { previousFocus.focus({preventScroll:true}); } catch(error) { previousFocus.focus(); }
+  }
+  return copied;
+}
+function resetData(){
+  Object.keys(rowsSaved).forEach(k=>delete rowsSaved[k]);selectedBefore='';
+  wafer.value='';header.textContent='W#';
+  matrix=[];pasteShape=null;rowCount=32;colCount=16;while(matrix.length<rowCount)matrix.push([]);build();
+  hideRetest();status.classList.remove('validation-error');
+  upper.forEach(c=>{c.textContent='';c.classList.remove('bad','good');c.title=''});
+  scroll.scrollTop=0;scroll.scrollLeft=0;
+}
+function switchProduct(){
+  resetData();
+  const isProxima=product.value==='proxima';
+  editor.classList.toggle('proxima',isProxima);
+  editor.querySelectorAll('[data-site], th.site').forEach(el=>{
+    const siteIndex=el.hasAttribute('data-site')?Number(el.dataset.site):Number(el.textContent.replace('Site',''));
+    el.hidden=isProxima && siteIndex>=12;
+  });
+  status.textContent=(isProxima?'Proxima (12 sites, Excel A:CA)':'Channing (16 sites, Excel A:CY)')+' selected. Excel input, wafer, and results cleared.';
+}
+product.addEventListener('change',switchProduct);
+document.getElementById('clear').addEventListener('click',async()=>{
+  resetData();
+  status.textContent='All Excel cells, wafer display and results cleared. Clearing clipboard…';
+  const clearedClipboard=await blankClipboard();
+  status.textContent=clearedClipboard
+    ? 'All Excel cells, wafer display and results cleared. Clipboard replaced with an empty string.'
+    : 'All Excel cells, wafer display and results cleared. Browser blocked clipboard access; clipboard was not changed.';
+});
+document.querySelector('.editor').addEventListener('paste',e=>{
+ const cell=e.target.closest('[data-row]');if(!cell)return;
+ const t=e.clipboardData&&e.clipboardData.getData('text/plain');if(!t||!/[\t\n]/.test(t))return;
+ e.preventDefault();const vals=t.trim().split(/\r?\n/).map(line=>line.split('\t'));
+ const types=['bysite','max','sbin'],r0=types.indexOf(cell.dataset.row),s0=Number(cell.dataset.site);
+ vals.forEach((line,r)=>line.forEach((val,c)=>{
+  const dest=document.querySelector(`.editor [data-row="${types[r0+r]}"][data-site="${s0+c}"]`);
+  if(dest)dest.textContent=val.trim()
+ }));store();
+});
+document.querySelector('.editor').addEventListener('input',store);
+while(matrix.length<rowCount)matrix.push([]);build();
+status.textContent='✓ JavaScript active · Channing selected (16 sites). Paste the complete Excel export into A1. Product and column count are verified before analysis.';
+})();
+</script>
+</body>
+</html>
