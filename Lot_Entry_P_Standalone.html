@@ -1,0 +1,1521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lot Entry P · Shared Workbook</title>
+<style>
+:root{font:15px/1.45 system-ui,sans-serif;color:#172b39;background:#f1f5f7}
+*{box-sizing:border-box} body{margin:0}
+header{background:#142a38;color:white}
+.bar,main{max-width:1240px;margin:auto;padding:18px 24px}
+.bar,.heading,.actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bar strong{font-size:1.05rem}
+main{padding-top:28px}
+section,dialog{background:white;border:1px solid #d4dfe5;border-radius:14px;padding:24px;margin-bottom:20px}
+h1,h2{margin:0;font-weight:660;letter-spacing:-.025em} h1{font-size:1.75rem} h2{font-size:1.25rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:20px 0}
+label{display:grid;gap:5px;font-weight:550}
+input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;padding:9px;border:1px solid #9fb2be;border-radius:7px;background:white;color:inherit}
+button{border:1px solid #99adb9;border-radius:7px;background:white;color:#173340;padding:8px 13px;cursor:pointer;font-weight:600}
+button.primary{background:#08685f;color:white;border-color:#08685f}
+button:disabled{opacity:.55;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #2db6a3;outline-offset:2px}
+.history-actions,.date-range{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.date-range label{gap:3px;font-size:.8rem;color:#46616f}
+.date-range input{width:9.5rem;min-height:36px;padding:5px 8px;font-size:.9rem;cursor:pointer}
+.date-range input:disabled{cursor:default}
+.date-range input::-webkit-calendar-picker-indicator{cursor:pointer}
+.history-actions button{min-height:36px;padding:6px 10px}
+.field-error{color:#a0222d;font-weight:400}.entry-invalid{border-color:#a0222d;background:#fff5f6}
+.submission-banner{background:#edf8f4;border:1px solid #84b6a6;border-radius:8px;padding:14px;margin:14px 0}
+.submission-banner p{margin:4px 0}.submission-banner dl{display:grid;gap:4px}.submission-banner dl>div{display:flex;gap:6px;align-items:baseline}
+.submission-banner dt{font-weight:600}.submission-banner dd{margin:0;overflow-wrap:anywhere;white-space:pre-line}
+.hold-lines{white-space:pre-line}.hold-group{margin:10px 0;padding:8px;border:1px solid #d4dfe5;border-radius:6px}
+.table-wrap{overflow:auto;margin-top:14px}
+table{border-collapse:collapse;width:100%;white-space:nowrap;font-size:.9rem}
+th,td{text-align:left;padding:10px 9px;border-bottom:1px solid #dae4e9}
+th{background:#e8f0f3;color:#213746}td:first-child{font-variant-numeric:tabular-nums}
+tbody tr:nth-child(even){background:#f7fafb}.empty{text-align:center;color:#46616f}
+small{color:#46616f} .status{color:#08685f}.status[data-error="true"]{color:#a0222d}
+dialog{width:min(800px,calc(100% - 24px));max-height:90vh;margin:auto}
+dialog::backdrop{background:#142a38aa}
+fieldset{border:1px solid #d4dfe5;border-radius:8px;min-width:0}
+legend{font-weight:650} input[readonly]{background:#eef3f6} label[hidden]{display:none} .hold-equivalents{margin-top:12px;overflow-wrap:anywhere} textarea{resize:vertical} .admin-form label+label{margin-top:8px}
+</style>
+</head>
+<body>
+<header><div class="bar"><strong>Lot Entry P</strong><div class="actions"><button id="connect" type="button">Connect Workbook</button><button id="openAdmin" type="button" disabled>Admin settings</button></div></div></header>
+<main>
+  <section>
+    <h1 id="entryTitle">New submission</h1>
+    <p id="workbookName">Connect a separate .xlsx workbook for Lot Entry P.</p><small>Take turns saving. Keep the master workbook closed in Excel.</small>
+    <p id="masterPathHint" hidden></p>
+    <div id="submissionBanner" class="submission-banner" hidden>
+      <h2 id="completionTitle" tabindex="-1">Submission complete</h2>
+      <p id="completionTime"></p>
+      <dl id="completionDetails"></dl>
+      <button id="dismissSummary" type="button">Dismiss</button>
+    </div>
+    <form id="entry" novalidate>
+      <div id="fields" class="grid"></div>
+      <div class="actions">
+        <button class="primary" id="save" disabled>Save submission</button>
+        <button id="cancelEdit" type="button" hidden>Cancel edit</button>
+        <span id="saveStatus" class="status" role="status"></span>
+      </div>
+    </form>
+  </section>
+  <section>
+    <div class="heading">
+      <div><h2 id="tableHeading">Today’s Submissions</h2><small id="date"></small></div>
+      <div class="history-actions">
+        <div class="date-range" role="group" aria-label="Submission date range">
+          <label for="startDate">Start date<input id="startDate" type="date" disabled></label>
+          <label for="endDate">End date<input id="endDate" type="date" disabled></label>
+        </div>
+        <button id="refreshRows" type="button" disabled>Refresh</button>
+        <button id="export" type="button" disabled>Download Excel</button>
+      </div>
+    </div>
+    <div class="table-wrap" tabindex="0" aria-label="Saved submissions table">
+      <table><thead id="columns"></thead><tbody id="rows"></tbody></table>
+    </div>
+    <p id="tableStatus" class="status" role="status"></p>
+  </section>
+</main>
+<dialog id="admin">
+  <div class="heading"><h2>Admin settings</h2><button id="closeAdmin" type="button">Close</button></div>
+  <form id="login" class="admin-form">
+    <p><label>Admin password<input id="password" type="password" autocomplete="current-password" required></label></p>
+    <small id="adminHint"></small><p><button class="primary">Sign in</button></p>
+  </form>
+  <form id="settings" class="admin-form" hidden>
+    <label>Master workbook path
+      <input id="masterPath" type="text" maxlength="1024" placeholder="\\server\folder\Master.xlsx">
+    </label>
+    <div class="grid" id="settingsFields"></div>
+    <div class="actions">
+      <button class="primary" type="submit">Save settings</button>
+      <button id="downloadHtml" type="button">Download HTML</button>
+      <button id="openPasswordChange" type="button">Change password</button>
+    </div>
+  </form>
+  <form id="changePassword" class="admin-form" hidden>
+    <p><label>Current password<input id="currentPassword" type="password" autocomplete="current-password" required></label></p>
+    <p><label>New password<input id="newPassword" type="password" autocomplete="new-password" required></label></p>
+    <p><label>Confirm new password<input id="confirmPassword" type="password" autocomplete="new-password" required></label></p>
+    <div class="actions">
+      <button id="savePassword" class="primary" type="submit">Save password</button>
+      <button id="cancelPassword" type="button">Cancel</button>
+    </div>
+  </form>
+  <p id="adminStatus" class="status" role="status"></p>
+</dialog>
+<script id="embeddedSettings" type="application/json">{}</script>
+<script>
+const $ = id => document.getElementById(id);
+const htmlTemplate = document.documentElement.cloneNode(true);
+const embeddedSettings = JSON.parse($('embeddedSettings').textContent);
+const embeddedMasterPath = embeddedSettings.masterPath || '';
+let configSignature = '', adminToken = '', refreshNumber = 0;
+function element(tag, text) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function status(id, message, error = false) {
+  $(id).textContent = message;
+  $(id).dataset.error = error;
+}
+const FIELDS = ['Schedule_ID', 'QTY', 'Lot_No', 'Wafer_ID', 'HOLD CODE', 'New Lot', 'Hold'];
+const CONFIG_FIELDS = ['Schedule_ID', 'Lot_No', 'HOLD CODE', 'New Lot', 'Hold'];
+const DROPDOWN_FIELDS = ['New Lot', 'Hold'];
+const WAFERS = Array.from({length: 25}, (_, index) => String(index + 1).padStart(2, '0'));
+const HEADERS = ['Saved Time', ...FIELDS];
+const OWNER_COLUMN = 'I';
+const XML = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const PKG = 'http://schemas.openxmlformats.org/package/2006/relationships';
+const TYPES = 'http://schemas.openxmlformats.org/package/2006/content-types';
+const SETTINGS = '_LotEntryPSettings';
+const encoder = new TextEncoder();
+const decoder = new TextDecoder('utf-8', {fatal: true});
+const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MAX_BYTES = 50 * 1024 * 1024;
+
+const crcTable = Array.from({length: 256}, (_, index) => {
+  for (let bit = 0; bit < 8; bit++) index = (index >>> 1) ^ ((index & 1) ? 0xedb88320 : 0);
+  return index >>> 0;
+});
+function crc32(bytes) {
+  let value = -1;
+  for (const byte of bytes) value = (value >>> 8) ^ crcTable[(value ^ byte) & 255];
+  return (value ^ -1) >>> 0;
+}
+class Zip {
+  constructor(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    let end = bytes.length - 22;
+    while (end >= Math.max(0, bytes.length - 65557)) {
+      if (view.getUint32(end, true) === 0x06054b50 &&
+          end + 22 + view.getUint16(end + 20, true) === bytes.length) break;
+      end--;
+    }
+    if (end < Math.max(0, bytes.length - 65557) || view.getUint16(end + 4, true) ||
+        view.getUint16(end + 6, true)) throw new Error('Select a standard, unencrypted .xlsx workbook.');
+    this.entries = new Map();
+    let offset = view.getUint32(end + 16, true);
+    const count = view.getUint16(end + 10, true);
+    let totalSize = 0;
+    if (count === 65535 || offset > end) throw new Error('This workbook uses an unsupported ZIP format.');
+    for (let index = 0; index < count; index++) {
+      if (offset + 46 > end || view.getUint32(offset, true) !== 0x02014b50) throw new Error('Invalid workbook archive.');
+      const flags = view.getUint16(offset + 8, true);
+      const method = view.getUint16(offset + 10, true);
+      const crc = view.getUint32(offset + 16, true);
+      const packed = view.getUint32(offset + 20, true);
+      const size = view.getUint32(offset + 24, true);
+      const nameLength = view.getUint16(offset + 28, true);
+      const name = decoder.decode(bytes.subarray(offset + 46, offset + 46 + nameLength));
+      const start = view.getUint32(offset + 42, true);
+      totalSize += size;
+      if (flags & 1 || ![0, 8].includes(method) || start + 30 > end ||
+          totalSize > 4 * MAX_BYTES || this.entries.has(name) ||
+          view.getUint32(start, true) !== 0x04034b50) throw new Error('Unsupported workbook archive.');
+      const dataStart = start + 30 + view.getUint16(start + 26, true) + view.getUint16(start + 28, true);
+      if (dataStart + packed > end) throw new Error('Invalid workbook archive.');
+      this.entries.set(name, {method, size, crc, data: bytes.subarray(dataStart, dataStart + packed)});
+      offset += 46 + nameLength + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
+    }
+  }
+  async read(name) {
+    const entry = this.entries.get(name);
+    if (!entry) throw new Error('Workbook component missing: ' + name);
+    const stream = new Blob([entry.data]).stream();
+    const data = entry.method === 8
+      ? new Uint8Array(await new Response(stream.pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())
+      : entry.data;
+    if (data.length !== entry.size || crc32(data) !== entry.crc) throw new Error('The workbook archive is damaged.');
+    return decoder.decode(data);
+  }
+  async put(name, source) {
+    const data = encoder.encode(source);
+    const compressed = new Uint8Array(await new Response(
+      new Blob([data]).stream().pipeThrough(new CompressionStream('deflate-raw'))
+    ).arrayBuffer());
+    this.entries.set(name, {method: 8, size: data.length, crc: crc32(data), data: compressed});
+  }
+  blob() {
+    const local = [], central = [];
+    let offset = 0, centralSize = 0;
+    for (const [name, entry] of this.entries) {
+      const filename = encoder.encode(name);
+      const header = (length, signature) => {
+        const view = new DataView(new ArrayBuffer(length));
+        view.setUint32(0, signature, true);
+        return view;
+      };
+      const record = header(30, 0x04034b50);
+      const directory = header(46, 0x02014b50);
+      for (const [view, shift] of [[record, 0], [directory, 2]]) {
+        view.setUint16(4 + shift, 20, true);
+        view.setUint16(6 + shift, 0x800, true);
+        view.setUint16(8 + shift, entry.method, true);
+        view.setUint16(12 + shift, 33, true);
+        view.setUint32(14 + shift, entry.crc, true);
+        view.setUint32(18 + shift, entry.data.length, true);
+        view.setUint32(22 + shift, entry.size, true);
+        view.setUint16(26 + shift, filename.length, true);
+      }
+      directory.setUint16(4, 20, true);
+      directory.setUint32(42, offset, true);
+      local.push(record.buffer, filename, entry.data);
+      central.push(directory.buffer, filename);
+      offset += 30 + filename.length + entry.data.length;
+      centralSize += 46 + filename.length;
+    }
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, this.entries.size, true);
+    end.setUint16(10, this.entries.size, true);
+    end.setUint32(12, centralSize, true);
+    end.setUint32(16, offset, true);
+    return new Blob([...local, ...central, end.buffer], {type: XLSX_TYPE});
+  }
+}
+function parse(source) {
+  const xml = new DOMParser().parseFromString(source, 'application/xml');
+  if (xml.querySelector('parsererror') || xml.doctype) throw new Error('Unsupported workbook XML.');
+  return xml;
+}
+const serialize = node => new XMLSerializer().serializeToString(node);
+const nodes = (node, name, ns = XML) => Array.from(node.getElementsByTagNameNS(ns, name));
+function append(parent, tag, attrs = {}, value, ns = XML) {
+  const node = parent.ownerDocument.createElementNS(ns, tag);
+  for (const [key, val] of Object.entries(attrs)) node.setAttribute(key, val);
+  if (value !== undefined) node.textContent = value;
+  parent.append(node);
+  return node;
+}
+function cell(row, address, value, style) {
+  const numeric = typeof value === 'number';
+  const attributes = {r: address};
+  if (style !== undefined) attributes.s = style;
+  if (!numeric && value !== undefined) attributes.t = 'inlineStr';
+  const entry = append(row, 'c', attributes);
+  if (numeric) append(entry, 'v', {}, value);
+  else if (value !== undefined) {
+    const text = append(append(entry, 'is'), 't', {}, value);
+    text.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+  }
+}
+function col(index) { return String.fromCharCode(65 + index); }
+function excelColumn(position) {
+  let column = '';
+  while (position) {
+    position--;
+    column = col(position % 26) + column;
+    position = Math.floor(position / 26);
+  }
+  return column;
+}
+function dateAndTime() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date());
+  const p = Object.fromEntries(parts.map(({type, value}) => [type, value]));
+  return {date: [p.year, p.month, p.day].join('-'), time: [p.hour, p.minute, p.second].join(':')};
+}
+function displayTime(value) {
+  if (typeof value !== 'number') return value;
+  const seconds = Math.round(value * 86400) % 86400;
+  return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]
+    .map(part => String(part).padStart(2, '0')).join(':');
+}
+const blankSettings = () => Object.fromEntries(CONFIG_FIELDS.map(field =>
+  [field, embeddedSettings[field] ? structuredClone(embeddedSettings[field])
+    : {mode: DROPDOWN_FIELDS.includes(field) ? 'dropdown' : 'manual', options: []}]
+));
+
+class WorkbookFile {
+  static async open(file) {
+    if (file.size > MAX_BYTES) throw new Error('This version supports workbooks up to 50 MB.');
+    const book = new WorkbookFile();
+    book.zip = new Zip(await file.arrayBuffer());
+    book.main = parse(await book.zip.read('xl/workbook.xml'));
+    book.rels = parse(await book.zip.read('xl/_rels/workbook.xml.rels'));
+    book.types = parse(await book.zip.read('[Content_Types].xml'));
+    book.sheets = nodes(book.main, 'sheets')[0];
+    if (!book.sheets || book.zip.entries.has('xl/vbaProject.bin') ||
+        [...book.zip.entries.keys()].some(name => name.startsWith('_xmlsignatures/'))) {
+      throw new Error('Use an unsigned standard .xlsx workbook without macros.');
+    }
+    book.strings = [];
+    const shared = book.partForType('sharedStrings');
+    if (shared) {
+      book.strings = nodes(parse(await book.zip.read(shared)), 'si')
+        .map(item => nodes(item, 't').map(text => text.textContent).join(''));
+    }
+    const worksheets = nodes(book.sheets, 'sheet');
+    if (worksheets.some(sheet => sheet.getAttribute('name') === '_LotEntrySettings')) {
+      throw new Error('Select a separate workbook for Lot Entry P.');
+    }
+    if (!worksheets.some(sheet => sheet.getAttribute('name') === SETTINGS)) {
+      for (const entry of worksheets) {
+        const name = entry.getAttribute('name');
+        if (/^\d{4}-\d{2}-\d{2}$/.test(name)) book.checkLayout(await book.sheet(name));
+      }
+    }
+    return book;
+  }
+  relationships() { return nodes(this.rels, 'Relationship', PKG); }
+  partForType(type) {
+    const rel = this.relationships().find(link => link.getAttribute('Type') === REL + '/' + type);
+    return rel ? this.resolve(rel) : null;
+  }
+  resolve(link) {
+    if (link.getAttribute('TargetMode') === 'External') throw new Error('External worksheet links are unsupported.');
+    const target = new URL(link.getAttribute('Target'), 'https://workbook.invalid/xl/workbook.xml');
+    if (target.origin !== 'https://workbook.invalid') throw new Error('Invalid workbook relationship.');
+    return decodeURIComponent(target.pathname.slice(1));
+  }
+  async sheet(name) {
+    const ref = nodes(this.sheets, 'sheet').find(sheet => sheet.getAttribute('name') === name);
+    if (!ref) return null;
+    const rel = this.relationships().find(link => link.getAttribute('Id') === ref.getAttributeNS(REL, 'id'));
+    if (!rel || rel.getAttribute('Type') !== REL + '/worksheet') throw new Error('Unsupported worksheet relationship.');
+    const path = this.resolve(rel);
+    return {path, doc: parse(await this.zip.read(path))};
+  }
+  makeSheet(name, hidden = false) {
+    let number = 1;
+    while (this.zip.entries.has('xl/worksheets/lot-entry-' + number + '.xml')) number++;
+    const target = 'worksheets/lot-entry-' + number + '.xml';
+    const path = 'xl/' + target;
+    const used = new Set(this.relationships().map(link => link.getAttribute('Id')));
+    let id = 1;
+    while (used.has('rIdLotEntry' + id)) id++;
+    const relationship = 'rIdLotEntry' + id;
+    const sheetId = Math.max(0, ...nodes(this.sheets, 'sheet').map(sheet => +sheet.getAttribute('sheetId'))) + 1;
+    const attributes = {name, sheetId};
+    if (hidden) attributes.state = 'veryHidden';
+    const ref = append(this.sheets, 'sheet', attributes);
+    ref.setAttributeNS(REL, 'r:id', relationship);
+    append(this.rels.documentElement, 'Relationship', {Id: relationship, Type: REL + '/worksheet', Target: target}, undefined, PKG);
+    append(this.types.documentElement, 'Override', {
+      PartName: '/' + path,
+      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml'
+    }, undefined, TYPES);
+    return {path, doc: parse('<worksheet xmlns="' + XML + '"><sheetData/></worksheet>')};
+  }
+  async writeSheet(sheet) {
+    await this.zip.put(sheet.path, serialize(sheet.doc));
+    await this.zip.put('xl/workbook.xml', serialize(this.main));
+    await this.zip.put('xl/_rels/workbook.xml.rels', serialize(this.rels));
+    await this.zip.put('[Content_Types].xml', serialize(this.types));
+  }
+  value(entry) {
+    if (!entry) return '';
+    const type = entry.getAttribute('t');
+    if (type === 'inlineStr') return nodes(entry, 't').map(text => text.textContent).join('');
+    const value = nodes(entry, 'v')[0]?.textContent;
+    if (value === undefined) return '';
+    if (type === 's') return this.strings[+value] ?? '';
+    return !type || type === 'n' ? Number(value) : value;
+  }
+  async preferences() {
+    const sheet = await this.sheet(SETTINGS);
+    if (!sheet) return {config: blankSettings(), auth: null, masterPath: embeddedMasterPath};
+    const rows = nodes(sheet.doc, 'row');
+    const header = nodes(rows[0], 'c');
+    const auth = JSON.parse(this.value(header[0]));
+    const savedPath = header.find(entry => entry.getAttribute('r') === 'B1');
+    const masterPath = savedPath ? this.value(savedPath) : embeddedMasterPath;
+    const config = blankSettings();
+    const savedFormats = header.find(entry => entry.getAttribute('r') === 'C1');
+    const formats = savedFormats ? JSON.parse(this.value(savedFormats)) : {};
+    for (const [index, field] of CONFIG_FIELDS.entries()) {
+      const values = nodes(rows[index + 1], 'c').map(entry => this.value(entry));
+      config[field] = {mode: values[0], options: values.slice(1)};
+      if (formats[field]) config[field].format = formats[field];
+    }
+    const equivalents = rows.find(row => row.getAttribute('r') === String(CONFIG_FIELDS.length + 2));
+    if (equivalents) config.Hold.equivalents = nodes(equivalents, 'c').slice(1).map(entry => this.value(entry));
+    return {config, auth, masterPath};
+  }
+  async savePreferences({config, auth, masterPath = embeddedMasterPath}) {
+    const sheet = await this.sheet(SETTINGS) || this.makeSheet(SETTINGS, true);
+    const data = nodes(sheet.doc, 'sheetData')[0];
+    data.replaceChildren();
+    const header = append(data, 'row', {r: 1});
+    cell(header, 'A1', JSON.stringify(auth));
+    cell(header, 'B1', masterPath);
+    const formats = Object.fromEntries(CONFIG_FIELDS.filter(field => config[field].format)
+      .map(field => [field, config[field].format]));
+    cell(header, 'C1', JSON.stringify(formats));
+    for (const [index, field] of CONFIG_FIELDS.entries()) {
+      const number = index + 2;
+      const row = append(data, 'row', {r: number});
+      cell(row, 'A' + number, config[field].mode);
+      config[field].options.forEach((value, index) => cell(row, excelColumn(index + 2) + number, value));
+    }
+    if (config.Hold.equivalents) {
+      const number = CONFIG_FIELDS.length + 2;
+      const row = append(data, 'row', {r: number});
+      cell(row, 'A' + number, 'Hold equivalents');
+      config.Hold.equivalents.forEach((value, index) => cell(row, excelColumn(index + 2) + number, value));
+    }
+    await this.writeSheet(sheet);
+  }
+  async styles() {
+    const path = this.partForType('styles');
+    if (!path) return {};
+    const doc = parse(await this.zip.read(path));
+    const fills = nodes(doc, 'fills')[0];
+    const formats = nodes(doc, 'cellXfs')[0];
+    if (!fills || !formats) return {};
+    const result = {};
+    for (const [key, color, numFmtId] of [
+      ['yellow', 'FFFFFF00', 0], ['blue', 'FF00B2E2', 0], ['time', null, 21]
+    ]) {
+      // Reuse equivalent formats so repeated saves do not grow the style table.
+      let fillId = 0;
+      if (color) {
+        const patterns = nodes(fills, 'fill');
+        fillId = patterns.findIndex(fill => nodes(fill, 'fgColor')[0]?.getAttribute('rgb') === color &&
+          nodes(fill, 'patternFill')[0]?.getAttribute('patternType') === 'solid');
+        if (fillId < 0) {
+          fillId = patterns.length;
+          const pattern = append(append(fills, 'fill'), 'patternFill', {patternType: 'solid'});
+          append(pattern, 'fgColor', {rgb: color});
+          fills.setAttribute('count', fillId + 1);
+        }
+      }
+      const formatsList = nodes(formats, 'xf');
+      let style = formatsList.findIndex(xf => +xf.getAttribute('numFmtId') === numFmtId &&
+        +xf.getAttribute('fillId') === fillId && xf.getAttribute('fontId') === '0' &&
+        xf.getAttribute('borderId') === '0' && xf.getAttribute(color ? 'applyFill' : 'applyNumberFormat') === '1');
+      if (style < 0) {
+        style = formatsList.length;
+        append(formats, 'xf', {numFmtId, fontId: 0, fillId, borderId: 0, xfId: 0,
+          [color ? 'applyFill' : 'applyNumberFormat']: 1});
+        formats.setAttribute('count', style + 1);
+      }
+      result[key] = style;
+    }
+    const formatsList = nodes(formats, 'xf');
+    let wrap = formatsList.findIndex(xf => xf.getAttribute('applyAlignment') === '1' &&
+      nodes(xf, 'alignment')[0]?.getAttribute('wrapText') === '1' &&
+      ['numFmtId', 'fontId', 'fillId', 'borderId'].every(key => xf.getAttribute(key) === '0'));
+    if (wrap < 0) {
+      wrap = formatsList.length;
+      append(append(formats, 'xf', {numFmtId: 0, fontId: 0, fillId: 0, borderId: 0, xfId: 0,
+        applyAlignment: 1}), 'alignment', {wrapText: 1, vertical: 'top'});
+      formats.setAttribute('count', wrap + 1);
+    }
+    result.holdWrap = wrap;
+    await this.zip.put(path, serialize(doc));
+    return result;
+  }
+  checkLayout(sheet, allowUnknown = false) {
+    const data = nodes(sheet.doc, 'sheetData')[0];
+    const rows = nodes(data, 'row').filter(row => ['1', '2'].includes(row.getAttribute('r')));
+    const headers = new Map(rows.flatMap(row => nodes(row, 'c')).map(entry => [entry.getAttribute('r'), this.value(entry)]));
+    if (HEADERS.every((header, index) => [1, 2].some(row => headers.get(col(index) + row) === header))) return data;
+    if (allowUnknown) return null;
+    throw new Error('This worksheet does not have the Lot Entry P layout. Use a separate workbook.');
+  }
+  async formattedExport() {
+    const stylesPath = this.partForType('styles');
+    const styles = stylesPath ? parse(await this.zip.read(stylesPath)) : null;
+    const formats = styles && nodes(styles, 'cellXfs')[0];
+    const originals = formats ? nodes(formats, 'xf') : [];
+    const centered = new Map();
+    const center = entry => {
+      if (!originals.length) return;
+      const index = Number(entry.getAttribute('s') || 0);
+      const original = originals[index] || originals[0];
+      const previous = nodes(original, 'alignment')[0];
+      if (previous?.getAttribute('horizontal') === 'center' && previous.getAttribute('vertical') === 'center') return;
+      if (!centered.has(index)) {
+        const style = original.cloneNode(true);
+        const alignment = nodes(style, 'alignment')[0] || append(style, 'alignment');
+        alignment.setAttribute('horizontal', 'center');
+        alignment.setAttribute('vertical', 'center');
+        style.setAttribute('applyAlignment', '1');
+        centered.set(index, originals.length + centered.size);
+        formats.append(style);
+      }
+      entry.setAttribute('s', centered.get(index));
+    };
+    for (const entry of nodes(this.sheets, 'sheet')) {
+      const name = entry.getAttribute('name');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(name)) continue;
+      const sheet = await this.sheet(name);
+      const data = this.checkLayout(sheet, true);
+      if (!data) continue;
+      for (const value of nodes(data, 'c')) {
+        if (/^[A-H][0-9]+$/.test(value.getAttribute('r'))) center(value);
+      }
+      await this.zip.put(sheet.path, serialize(sheet.doc));
+    }
+    if (centered.size) {
+      formats.setAttribute('count', originals.length + centered.size);
+      await this.zip.put(stylesPath, serialize(styles));
+    }
+    return this.zip.blob();
+  }
+  readRecord(row, date) {
+    const number = row.getAttribute('r');
+    const entries = new Map(nodes(row, 'c').map(entry => [entry.getAttribute('r'), this.value(entry)]));
+    const time = entries.get('A' + number);
+    const values = FIELDS.map((_, index) => entries.get(col(index + 1) + number) ?? '');
+    const metadata = entries.get(OWNER_COLUMN + number);
+    const [owner, id] = typeof metadata === 'string' && /^[a-f0-9]{64}:[a-f0-9-]{36}$/.test(metadata)
+      ? metadata.split(':') : ['', ''];
+    return {date, time: time === undefined ? '' : displayTime(time), values, owner, id};
+  }
+  async today(date) {
+    const sheet = await this.sheet(date);
+    if (!sheet) return [];
+    return nodes(this.checkLayout(sheet), 'row').filter(row => +row.getAttribute('r') >= 3)
+      .map(row => this.readRecord(row, date)).filter(record => record.time !== '').reverse();
+  }
+  async history(startDate = '', endDate = '') {
+    const dates = nodes(this.sheets, 'sheet').map(sheet => sheet.getAttribute('name'))
+      .filter(name => /^\d{4}-\d{2}-\d{2}$/.test(name) &&
+        (!startDate || name >= startDate) && (!endDate || name <= endDate)).sort().reverse();
+    const rows = [];
+    for (const date of dates) {
+      for (const row of await this.today(date)) rows.push(row);
+    }
+    return rows;
+  }
+  async add(date, time, values, owner) {
+    let sheet = await this.sheet(date);
+    const style = await this.styles();
+    if (!sheet) {
+      sheet = this.makeSheet(date);
+      const root = sheet.doc.documentElement;
+      const data = nodes(root, 'sheetData')[0];
+      const widths = append(root, 'cols');
+      root.insertBefore(widths, data);
+      for (const [index, width] of [16, 20, 10, 21, 27, 18, 30, 30, 16].entries()) {
+        append(widths, 'col', {min: index + 1, max: index + 1, width, customWidth: 1, ...(index === 8 ? {hidden: 1} : {})});
+      }
+      const first = append(data, 'row', {r: 1});
+      HEADERS.forEach((label, index) => cell(first, col(index) + '1', label, style.yellow));
+      cell(first, OWNER_COLUMN + '1', 'Lot Entry P record');
+      const merges = append(root, 'mergeCells', {count: HEADERS.length});
+      HEADERS.forEach((_, index) => append(merges, 'mergeCell', {ref: col(index) + '1:' + col(index) + '2'}));
+    }
+    const data = this.checkLayout(sheet);
+    const number = nodes(data, 'row').reduce((last, row) => Math.max(last, +row.getAttribute('r')), 2) + 1;
+    if (number > 1048576) throw new Error('This worksheet has reached the Excel row limit.');
+    const row = append(data, 'row', {r: number});
+    const [h, m, s] = time.split(':').map(Number);
+    if (style.time === undefined) cell(row, 'A' + number, time);
+    else cell(row, 'A' + number, (h * 3600 + m * 60 + s) / 86400, style.time);
+    this.writeValues(row, values, style.holdWrap);
+    if (owner) cell(row, OWNER_COLUMN + number, owner + ':' + crypto.randomUUID());
+    const dimension = nodes(sheet.doc, 'dimension')[0];
+    if (dimension) {
+      const previous = dimension.getAttribute('ref').split(':');
+      const end = previous.at(-1).match(/^([A-Z]+)([0-9]+)$/);
+      if (end && +end[2] < number) {
+        const column = owner && (end[1].length === 1 && end[1] < OWNER_COLUMN) ? OWNER_COLUMN : end[1];
+        dimension.setAttribute('ref', previous[0] + ':' + column + number);
+      }
+    }
+    await this.writeSheet(sheet);
+  }
+  writeValues(row, values, holdWrap) {
+    const number = row.getAttribute('r');
+    const entries = nodes(row, 'c');
+    const following = entries.find(entry => !/^[A-H][0-9]+$/.test(entry.getAttribute('r')));
+    values.forEach((value, index) => {
+      if (value === '') return;
+      const address = col(index + 1) + number;
+      const before = entries.find(entry => entry.getAttribute('r') === address);
+      const style = FIELDS[index] === 'Hold' && value.includes('\n')
+        ? holdWrap ?? before?.getAttribute('s') ?? undefined : before?.getAttribute('s') ?? undefined;
+      if (FIELDS[index] === 'Hold' && value.includes('\n')) {
+        const height = Math.min(409, 16 * value.split('\n').length);
+        if (height > Number(row.getAttribute('ht') || 0)) {
+          row.setAttribute('ht', height);
+          row.setAttribute('customHeight', '1');
+        }
+      }
+      before?.remove();
+      cell(row, address, FIELDS[index] === 'QTY' ? Number(value) : value, style);
+      if (following) row.insertBefore(row.lastElementChild, following);
+    });
+  }
+  async editRecord(original, owner, values) {
+    const sheet = await this.sheet(original.date);
+    if (!sheet) throw new Error('This submission is no longer in the workbook.');
+    const data = this.checkLayout(sheet);
+    const rows = nodes(data, 'row');
+    const row = rows.find(entry => this.readRecord(entry, original.date).id === original.id);
+    if (!row) throw new Error('This submission is no longer in the workbook.');
+    const current = this.readRecord(row, original.date);
+    if (!owner || current.owner !== owner) throw new Error('Only the submitter can edit this row.');
+    if (current.time !== original.time || JSON.stringify(current.values) !== JSON.stringify(original.values)) {
+      throw new Error('This row changed. Cancel the edit, refresh, and open it again.');
+    }
+    this.writeValues(row, values, (await this.styles()).holdWrap);
+    await this.writeSheet(sheet);
+  }
+}
+
+let workbookHandle = null;
+let busy = false;
+let profileOwner = '';
+let editing = null;
+let currentSettings = null;
+
+function checkedValue(field, value) {
+  if (typeof value !== 'string' || value.length > 250 || /[\x00-\x1f\x7f\ufffe\uffff]/.test(value)) {
+    throw new Error(field + ' must be single-line text of at most 250 characters.');
+  }
+  value = value.trim();
+  if (field === 'QTY' && value) {
+    if (!/^[0-9]{1,15}$/.test(value)) throw new Error('QTY must be a nonnegative whole number with up to 15 digits.');
+    return String(Number(value));
+  }
+  return value;
+}
+
+function selectedWafers(values) {
+  if (!Array.isArray(values) || !values.length || values.some(value => !WAFERS.includes(value))) {
+    throw new Error('Select at least one wafer number.');
+  }
+  return [...new Set(values)].sort();
+}
+
+function selectedHolds(values, config) {
+  if (!Array.isArray(values) || !values.length) throw new Error('Select at least one Hold reason.');
+  return [...new Set(values)].map(value => {
+    const index = config.options.indexOf(value);
+    if (index < 0) throw new Error('Choose Hold reasons available in the current settings.');
+    return config.equivalents[index];
+  }).join('\n');
+}
+
+function submissionValues(entries, config) {
+  const wafers = selectedWafers(entries.Wafer_ID);
+  return [
+    validatedEntry('Schedule_ID', entries.Schedule_ID, config.Schedule_ID),
+    wafers.length,
+    validatedEntry('Lot_No', entries.Lot_No, config.Lot_No),
+    wafers.join(', '),
+    validatedEntry('HOLD CODE', entries['HOLD CODE'], config['HOLD CODE']),
+    validatedEntry('New Lot', entries['New Lot'], config['New Lot']) + ': ' +
+      validatedEntry('New Lot comment', entries.newLotComment, {mode: 'manual'}),
+    selectedHolds(entries.Hold, config.Hold)
+  ];
+}
+
+function matchesFormat(input, pattern, allowAlphanumeric) {
+  const format = Array.from(pattern);
+  return input.length === format.length && format.every((character, index) => {
+    if (character === 'A') return /^[a-z]$/i.test(input[index]);
+    if (character === '9') return /^[0-9]$/.test(input[index]);
+    if (allowAlphanumeric && character === 'X') return /^[a-z0-9]$/i.test(input[index]);
+    return input[index] === character;
+  });
+}
+
+function validatedEntry(field, value, config) {
+  const normalized = checkedValue(field, value);
+  if (!normalized) throw new Error(field + ' is required.');
+  if (field === 'Lot_No' && (normalized.length <= 3 || !normalized.endsWith('.00'))) {
+    throw new Error('Lot_No must end in .00.');
+  }
+  if (config.mode === 'manual' && config.format) {
+    const input = Array.from(value.trim());
+    const lot = field === 'Lot_No';
+    const formats = lot ? optionLines(config.format) : [config.format];
+    if (!formats.some(format => matchesFormat(input, format, lot))) {
+      throw new Error('Expected format: ' + formats.join(' or '));
+    }
+  }
+  if (config.mode === 'fixed' && normalized !== config.options[0]) {
+    throw new Error('The fixed value for ' + field + ' changed. Refresh and try again.');
+  }
+  if (config.mode === 'dropdown') {
+    const option = config.options.indexOf(normalized);
+    if (option < 0) throw new Error('Choose a current option for ' + field + '.');
+  }
+  return normalized;
+}
+
+async function passwordHash(password, salt) {
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const hash = await crypto.subtle.deriveBits({
+    name: 'PBKDF2', salt: new Uint8Array(salt), iterations: 250000, hash: 'SHA-256'
+  }, key, 256);
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function createAdminCredential(password) {
+  if (typeof password !== 'string' || !password.length) throw new Error('Enter an admin password.');
+  const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)));
+  return {salt, hash: await passwordHash(password, salt)};
+}
+
+async function replaceBook(handle, original, blob) {
+  const current = await handle.getFile();
+  if (current.size !== original.size || current.lastModified !== original.lastModified) {
+    throw new Error('The workbook changed during this save. Refresh and try again when it is your turn.');
+  }
+  if (blob.size > MAX_BYTES) throw new Error('Saving would exceed the 50 MB workbook limit.');
+  const writer = await handle.createWritable({mode: 'exclusive'});
+  try {
+    const beforeWrite = await handle.getFile();
+    if (beforeWrite.size !== original.size || beforeWrite.lastModified !== original.lastModified) {
+      throw new Error('The workbook changed during this save. Refresh and try again when it is your turn.');
+    }
+    await writer.write(blob);
+    await writer.close();
+  } catch (error) {
+    await writer.abort().catch(() => {});
+    throw error;
+  }
+}
+
+async function request(url, data, password) {
+  const handle = workbookHandle;
+  if (!handle) throw new Error('Connect the shared workbook first.');
+  const writes = url === '/api/submissions' || url === '/api/edit' || url === '/api/admin/settings' || url === '/api/admin/setup' || url === '/api/admin/change-password';
+  if (writes && busy) throw new Error('A save is already in progress on this page.');
+  if (writes) busy = true;
+  try {
+    const file = await handle.getFile();
+    const book = await WorkbookFile.open(file);
+    const {config, auth, masterPath} = await book.preferences();
+    const stamp = dateAndTime();
+    if (url === '/api/today') {
+      return {date: stamp.date, rows: await book.today(stamp.date), fields: FIELDS, settings: config,
+        adminConfigured: Boolean(auth), masterPath};
+    }
+    if (url === '/api/history') {
+      const {startDate = '', endDate = ''} = data || {};
+      checkDateRange(startDate, endDate);
+      return {rows: await book.history(startDate, endDate), fields: FIELDS, settings: config};
+    }
+    if (url === '/api/submissions' || url === '/api/edit') {
+      const entries = url === '/api/edit' ? data.entries : data;
+      const values = submissionValues(entries, config);
+      if (!profileOwner) throw new Error('Edge could not store your submitter identity. Allow browser storage and reconnect.');
+      if (url === '/api/edit') await book.editRecord(data.original, profileOwner, values);
+      else await book.add(stamp.date, stamp.time, values, profileOwner);
+      await replaceBook(handle, file, book.zip.blob());
+      return {date: data.original?.date ?? stamp.date, time: data.original?.time ?? stamp.time, values};
+    }
+    const setup = url === '/api/admin/setup';
+    if (setup || url === '/api/admin/change-password') {
+      if (setup && auth) throw new Error('The admin password has already been set.');
+      if (!setup) {
+        if (!auth || await passwordHash(password, auth.salt) !== auth.hash) throw new Error('Incorrect current password.');
+        if (data.next !== data.confirm) throw new Error('The new passwords do not match.');
+      }
+      const credential = await createAdminCredential(setup ? password : data.next);
+      await book.savePreferences({config, auth: credential, masterPath});
+      await replaceBook(handle, file, book.zip.blob());
+      return {ok: true};
+    }
+    if (!auth || await passwordHash(password, auth.salt) !== auth.hash) throw new Error('Incorrect admin password.');
+    if (url === '/api/admin/check') return {ok: true};
+    if (url === '/api/admin/export') return {...config, masterPath};
+    const nextMasterPath = checkedMasterPath(data.masterPath ?? masterPath);
+    for (const field of CONFIG_FIELDS) {
+      const prior = config[field];
+      const {mode, options} = data[field];
+      const choices = options.map(option => checkedValue(field, option));
+      if (mode === 'fixed' && (choices.length !== 1 || !choices[0])) {
+        throw new Error('Enter exactly one fixed value for ' + field + '.');
+      }
+      if (!['manual', 'dropdown', 'fixed'].includes(mode) ||
+          (DROPDOWN_FIELDS.includes(field) && mode !== 'dropdown') || choices.length > 200 ||
+          (mode === 'dropdown' && !choices.length) || new Set(choices).size !== choices.length) {
+        throw new Error(field + ' needs up to 200 unique choices and at least one choice in dropdown mode.');
+      }
+      config[field] = {mode, options: choices};
+      const input = data[field].format ?? prior.format ?? '';
+      const formats = field === 'Lot_No' ? optionLines(input) : [input];
+      if (formats.length > 32 || formats.some(pattern => checkedValue('Format', pattern).length > 80)) {
+        throw new Error(field === 'Lot_No' ? 'Enter up to 32 Lot_No patterns of 80 characters or fewer per pattern.'
+          : 'Format rules must be 80 characters or shorter.');
+      }
+      const format = formats.join('\n').trim();
+      if (field === 'Lot_No' && mode !== 'manual' && choices.some(value => !value.endsWith('.00') || value.length <= 3)) {
+        throw new Error('Every Lot_No option must end in .00.');
+      }
+      if (mode === 'manual' && format) config[field].format = format;
+      if (field === 'New Lot' && choices.some(value => value.includes(': '))) {
+        throw new Error('New Lot choices cannot contain a colon followed by a space.');
+      }
+      if (field === 'Hold') {
+        const equivalents = (data[field].equivalents || []).map(value => checkedValue('Hold equivalent', value));
+        if (equivalents.length !== choices.length || equivalents.some(value => !value) ||
+            equivalents.join('\n').length > 32767) {
+          throw new Error('Enter an equivalent value for each Hold reason. Their combined length must fit one Excel cell.');
+        }
+        config.Hold.equivalents = equivalents;
+      }
+    }
+    await book.savePreferences({config, auth, masterPath: nextMasterPath});
+    await replaceBook(handle, file, book.zip.blob());
+    return {ok: true};
+  } finally {
+    if (writes) busy = false;
+  }
+}
+
+function checkedMasterPath(value) {
+  const path = value.trim();
+  if (path && !/^(?:\\\\[^\\]+\\[^\\]+\\|[a-z]:\\)(?:[^\\]+\\)*[^\\]+\.xlsx$/i.test(path)) {
+    throw new Error('Enter the full Windows path, including the .xlsx filename.');
+  }
+  return path;
+}
+
+function verifyWorkbookName(handle) {
+  const expected = embeddedMasterPath.split('\\').at(-1);
+  if (expected && handle.name.toLowerCase() !== expected.toLowerCase()) {
+    throw new Error('Select the configured master workbook: ' + expected);
+  }
+}
+
+const workbookKey = embeddedMasterPath ? 'path:' + embeddedMasterPath.toLowerCase() : 'page:' + location.href;
+let rememberedHandle = null;
+const writePermission = {mode: 'readwrite'};
+const connectButton = $('connect');
+
+async function workbookStorage(mode, operation) {
+  const db = await new Promise((resolve, reject) => {
+    const open = indexedDB.open('LotEntryPConnections', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('workbooks');
+    open.onsuccess = () => resolve(open.result);
+    open.onerror = () => reject(open.error);
+    open.onblocked = () => reject(new Error('Workbook storage is blocked.'));
+  });
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction('workbooks', mode);
+      const result = operation(transaction.objectStore('workbooks'));
+      transaction.oncomplete = () => resolve(result.result);
+      transaction.onabort = () => reject(transaction.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+function rememberedWorkbook(handle) {
+  return workbookStorage(handle ? 'readwrite' : 'readonly',
+    store => handle ? store.put(handle, workbookKey) : store.get(workbookKey));
+}
+
+async function loadProfileOwner() {
+  const key = 'submitter-identity';
+  const secret = await workbookStorage('readwrite', store => {
+    const read = store.get(key);
+    read.onsuccess = () => {
+      if (!read.result) store.put(crypto.randomUUID(), key);
+    };
+    return read;
+  }) || await workbookStorage('readonly', store => store.get(key));
+  if (!secret) throw new Error('Could not create a browser identity.');
+  const hash = await crypto.subtle.digest('SHA-256', encoder.encode(secret));
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function useWorkbook(handle) {
+  verifyWorkbookName(handle);
+  const book = await WorkbookFile.open(await handle.getFile());
+  await book.preferences();
+  await book.today(dateAndTime().date);
+  if (!profileOwner) profileOwner = await loadProfileOwner().catch(() => '');
+  if (editing && workbookHandle !== handle) stopEditing();
+  workbookHandle = handle;
+  $('workbookName').textContent = handle.name;
+  $('openAdmin').disabled = false;
+  connectButton.textContent = 'Connect Workbook';
+  status('tableStatus', '');
+  await refresh();
+}
+
+async function restoreWorkbook() {
+  if (embeddedMasterPath) {
+    $('masterPathHint').hidden = false;
+    $('masterPathHint').textContent = 'Master workbook: ' + embeddedMasterPath;
+  }
+  connectButton.disabled = true;
+  try {
+    rememberedHandle = await rememberedWorkbook();
+    if (!rememberedHandle) return;
+    verifyWorkbookName(rememberedHandle);
+    if (await rememberedHandle.queryPermission(writePermission) === 'granted') {
+      await useWorkbook(rememberedHandle);
+      rememberedHandle = null;
+    } else {
+      connectButton.textContent = 'Reconnect';
+      $('workbookName').textContent = 'Reconnect to allow access to ' + rememberedHandle.name + '.';
+    }
+  } catch {
+    rememberedHandle = null;
+  } finally {
+    connectButton.disabled = false;
+  }
+}
+
+connectButton.addEventListener('click', async () => {
+  if (busy) return;
+  connectButton.disabled = true;
+  const reconnecting = !!rememberedHandle;
+  try {
+    if (!window.showOpenFilePicker || !window.crypto?.subtle || !window.CompressionStream) {
+      throw new Error('Open this HTML file directly in a current desktop Edge or Chrome browser that allows file access.');
+    }
+    const [handle] = reconnecting ? [rememberedHandle] : await showOpenFilePicker({
+      id: 'lot-entry-p-master',
+      types: [{description: 'Excel workbook', accept: {[XLSX_TYPE]: ['.xlsx']}}],
+      excludeAcceptAllOption: true
+    });
+    verifyWorkbookName(handle);
+    if (await handle.requestPermission(writePermission) !== 'granted') {
+      throw new Error('Allow write access before connecting the workbook.');
+    }
+    await useWorkbook(handle);
+    rememberedHandle = null;
+    try {
+      await rememberedWorkbook(handle);
+    } catch {
+      status('tableStatus', 'Workbook connected. This browser could not remember it for next time.');
+    }
+  } catch (error) {
+    if (reconnecting) {
+      rememberedHandle = null;
+      connectButton.textContent = 'Connect Workbook';
+      $('workbookName').textContent = 'Select the workbook again to connect.';
+    }
+    if (error.name !== 'AbortError') status('tableStatus', error.message, true);
+  } finally {
+    connectButton.disabled = false;
+  }
+});
+
+function drawFields(settings) {
+  const signature = JSON.stringify(settings);
+  if (signature === configSignature) return;
+  const previous = new FormData($('entry'));
+  $('fields').replaceChildren();
+  currentSettings = settings;
+  for (const field of FIELDS) {
+    const config = settings[field];
+    const multiple = field === 'Hold' || field === 'Wafer_ID';
+    const control = element(multiple || config?.mode === 'dropdown' ? 'select' : 'input');
+    control.name = field;
+    if (field === 'QTY') control.readOnly = true;
+    if (multiple) {
+      control.multiple = true;
+      control.size = 5;
+    }
+    if (control.tagName === 'SELECT') {
+      const choices = field === 'Wafer_ID' ? WAFERS : config.options;
+      const selected = new Set(previous.getAll(field));
+      for (const value of multiple ? choices : ['', ...choices]) {
+        const prompt = choices.length ? 'Select an option' : 'Set choices in Admin settings';
+        const option = element('option', value || prompt);
+        option.value = value;
+        option.selected = selected.has(value);
+        control.append(option);
+      }
+    } else {
+      control.maxLength = 250;
+      if (config?.mode === 'fixed') {
+        control.readOnly = true;
+        control.defaultValue = config.options[0];
+      } else {
+        control.value = previous.get(field) || '';
+      }
+    }
+    const label = appendField(field, control);
+    if (multiple) label.append(element('small', field === 'Hold' && !config.options.length
+      ? 'Set Hold reasons in Admin settings.' : 'Use Ctrl+click to select more than one.'));
+    if (field === 'New Lot') {
+      const comment = element('input');
+      comment.name = 'newLotComment';
+      comment.maxLength = 250;
+      comment.value = previous.get(comment.name) || '';
+      appendField('New Lot comment', comment);
+    }
+  }
+  updateQuantity();
+  configSignature = signature;
+}
+
+function appendField(labelText, control) {
+  const label = element('label', labelText);
+  const error = element('small');
+  error.id = 'error-' + control.name.replaceAll(' ', '-');
+  error.className = 'field-error';
+  error.hidden = true;
+  control.setAttribute('aria-describedby', error.id);
+  control.addEventListener('input', () => {
+    if (control.name === 'Wafer_ID') updateQuantity();
+    validateControl(control);
+  });
+  label.append(control, error);
+  $('fields').append(label);
+  return label;
+}
+
+function updateQuantity() {
+  const controls = $('entry').elements;
+  controls.namedItem('QTY').value = controls.namedItem('Wafer_ID').selectedOptions.length;
+}
+
+function controlValue(control) {
+  return control.multiple ? Array.from(control.selectedOptions, option => option.value) : control.value;
+}
+
+function validateControl(control) {
+  let message = '';
+  try {
+    const value = controlValue(control);
+    if (control.name === 'Wafer_ID') selectedWafers(value);
+    else if (control.name === 'Hold') selectedHolds(value, currentSettings.Hold);
+    else if (control.name !== 'QTY') validatedEntry(control.name === 'newLotComment' ? 'New Lot comment' : control.name,
+      value, currentSettings[control.name] || {mode: 'manual'});
+  } catch (error) {
+    message = error.message;
+  }
+  const detail = $(control.getAttribute('aria-describedby'));
+  detail.textContent = message;
+  detail.hidden = !message;
+  control.classList.toggle('entry-invalid', Boolean(message));
+  control.setAttribute('aria-invalid', Boolean(message));
+  return !message;
+}
+
+function clearFieldErrors() {
+  for (const control of $('fields').querySelectorAll('input[name],select[name]')) {
+    $(control.getAttribute('aria-describedby')).hidden = true;
+    control.classList.remove('entry-invalid');
+    control.removeAttribute('aria-invalid');
+  }
+}
+
+function stopEditing() {
+  editing = null;
+  $('entry').reset();
+  updateQuantity();
+  clearFieldErrors();
+  $('entryTitle').textContent = 'New submission';
+  $('save').textContent = 'Save submission';
+  $('cancelEdit').hidden = true;
+}
+
+function startEditing(record) {
+  if ($('entry').dataset.saving === 'true') return;
+  editing = record;
+  clearFieldErrors();
+  const form = $('entry');
+  for (const [index, field] of FIELDS.entries()) {
+    const control = form.elements.namedItem(field);
+    if (control.readOnly) continue;
+    const saved = String(record.values[index] ?? '');
+    if (field === 'Wafer_ID') {
+      const wafers = new Set(saved.split(', '));
+      for (const option of control.options) option.selected = wafers.has(option.value);
+    } else if (field === 'Hold') {
+      const codes = saved.split('\n');
+      for (const [index, option] of Array.from(control.options).entries()) {
+        const found = codes.indexOf(currentSettings.Hold.equivalents[index]);
+        option.selected = found >= 0;
+        if (found >= 0) codes.splice(found, 1);
+      }
+    } else if (field === 'New Lot') {
+      const separator = saved.indexOf(': ');
+      control.value = separator < 0 ? '' : saved.slice(0, separator);
+      form.elements.namedItem('newLotComment').value = separator < 0 ? '' : saved.slice(separator + 2);
+    } else {
+      control.value = saved;
+      if (control.tagName === 'SELECT' && !control.value) control.value = '';
+    }
+  }
+  updateQuantity();
+  $('entryTitle').textContent = 'Edit submission';
+  $('save').textContent = 'Save changes';
+  $('cancelEdit').hidden = false;
+  status('saveStatus', 'Editing the submission from ' + record.date + ' at ' + record.time + '.');
+  form.querySelector('input:not([readonly]), select')?.focus();
+}
+
+$('cancelEdit').addEventListener('click', () => {
+  stopEditing();
+  status('saveStatus', '');
+});
+
+function checkDateRange(startDate, endDate) {
+  if ([startDate, endDate].some(date => date && !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
+    throw new Error('Enter valid start and end dates.');
+  }
+  if (startDate && endDate && endDate < startDate) {
+    throw new Error('End date must be on or after the start date.');
+  }
+}
+
+for (const id of ['startDate', 'endDate']) {
+  $(id).addEventListener('click', event => {
+    const input = event.currentTarget;
+    if (!input.showPicker) return;
+    try {
+      input.showPicker();
+      event.preventDefault();
+    } catch {
+      // The native icon and keyboard input remain available.
+    }
+  });
+}
+
+let appliedRange = null;
+$('refreshRows').addEventListener('click', async () => {
+  $('submissionBanner').hidden = true;
+  const startDate = $('startDate').value;
+  const endDate = $('endDate').value;
+  try {
+    checkDateRange(startDate, endDate);
+  } catch (error) {
+    status('tableStatus', error.message, true);
+    $('tableStatus').dataset.source = 'date-range';
+    return;
+  }
+  if ($('tableStatus').dataset.source === 'date-range') status('tableStatus', '');
+  appliedRange = {startDate, endDate};
+  $('refreshRows').disabled = true;
+  try {
+    await refresh();
+  } finally {
+    $('refreshRows').disabled = false;
+  }
+});
+async function refresh() {
+  if (!workbookHandle) return;
+  const number = ++refreshNumber;
+  const range = appliedRange;
+  const filtered = range && (range.startDate || range.endDate);
+  try {
+    const data = await request(range ? '/api/history' : '/api/today', range);
+    if (number !== refreshNumber) return;
+    drawFields(data.settings);
+    $('tableHeading').textContent = filtered ? 'Submissions by Date' : range ? 'All Submissions' : 'Today’s Submissions';
+    let period = range ? '' : data.date;
+    if (filtered) {
+      const {startDate, endDate} = range;
+      period = startDate && endDate ? startDate + ' to ' + endDate
+        : startDate ? 'From ' + startDate : 'Through ' + endDate;
+    }
+    $('date').textContent = (period ? period + ' · ' : '') + data.rows.length + ' saved';
+    const heading = element('tr');
+    const labels = [...(range ? ['Saved Date'] : []), 'Saved Time', ...FIELDS, 'Action'];
+    for (const field of labels) heading.append(element('th', field));
+    $('columns').replaceChildren(heading);
+    const rows = document.createDocumentFragment();
+    for (const record of data.rows) {
+      const row = element('tr');
+      const values = [...(range ? [record.date] : []), record.time, ...record.values];
+      for (const [index, value] of values.entries()) {
+        const entry = element('td', value ?? '');
+        if (index === values.length - 1) entry.className = 'hold-lines';
+        row.append(entry);
+      }
+      const action = element('td');
+      if (profileOwner && record.owner === profileOwner && record.id) {
+        const editButton = element('button', 'Edit');
+        editButton.type = 'button';
+        editButton.addEventListener('click', () => startEditing(record));
+        action.append(editButton);
+      }
+      row.append(action);
+      rows.append(row);
+    }
+    if (!data.rows.length) {
+      const row = element('tr');
+      const cell = element('td', filtered ? 'No submissions saved in this date range.' : range ? 'No submissions saved.' : 'No submissions saved today.');
+      cell.colSpan = labels.length;
+      cell.className = 'empty';
+      row.append(cell);
+      rows.append(row);
+    }
+    $('rows').replaceChildren(rows);
+    $('save').disabled = $('entry').dataset.saving === 'true';
+    $('export').disabled = false;
+    $('startDate').disabled = false;
+    $('endDate').disabled = false;
+    $('refreshRows').disabled = false;
+    if ($('tableStatus').dataset.error === 'true' && $('tableStatus').dataset.source === 'refresh') status('tableStatus', '');
+  } catch (error) {
+    if (number === refreshNumber) {
+      status('tableStatus', 'Could not refresh: ' + error.message, true);
+      $('tableStatus').dataset.source = 'refresh';
+    }
+  }
+}
+$('entry').addEventListener('submit', async event => {
+  event.preventDefault();
+  if ($('save').disabled) return;
+  $('submissionBanner').hidden = true;
+  const controls = Array.from($('fields').querySelectorAll('input[name],select[name]'));
+  const invalid = controls.filter(control => !validateControl(control));
+  if (invalid.length) {
+    status('saveStatus', 'Correct the highlighted fields before saving.', true);
+    invalid[0].focus();
+    return;
+  }
+  const values = Object.fromEntries(controls.map(control => [control.name, controlValue(control)]));
+  const original = editing;
+  $('cancelEdit').disabled = true;
+  $('entry').dataset.saving = 'true';
+  $('connect').disabled = true;
+  $('save').disabled = true;
+  try {
+    const saved = original ? await request('/api/edit', {original, entries: values})
+      : await request('/api/submissions', values);
+    stopEditing();
+    status('saveStatus', '');
+    showSubmissionSummary(saved, Boolean(original));
+    await refresh();
+  } catch (error) {
+    status('saveStatus', error.message, true);
+  } finally {
+    $('entry').dataset.saving = 'false';
+    $('cancelEdit').disabled = false;
+    $('connect').disabled = false;
+    $('save').disabled = false;
+  }
+});
+function showSubmissionSummary(record, updated) {
+  $('completionTitle').textContent = updated ? 'Changes saved' : 'Submission complete';
+  $('completionTime').textContent = 'Submitted ' + record.date;
+  const details = $('completionDetails');
+  details.replaceChildren();
+  const values = [record.time, ...record.values];
+  for (const [index, label] of ['Saved Time', ...FIELDS].entries()) {
+    const group = element('div');
+    group.append(element('dt', label + ':'), element('dd', values[index]));
+    details.append(group);
+  }
+  $('submissionBanner').hidden = false;
+  $('completionTitle').focus();
+}
+
+$('dismissSummary').addEventListener('click', () => {
+  $('submissionBanner').hidden = true;
+  $('save').focus();
+});
+
+function download(file, name) {
+  const url = URL.createObjectURL(file);
+  const link = element('a');
+  link.href = url;
+  link.download = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function configuredHtml(config) {
+  const copy = htmlTemplate.cloneNode(true);
+  copy.querySelector('#embeddedSettings').textContent = JSON.stringify(config).replace(/</g, '\\u003c');
+  return '<!doctype html>\n' + copy.outerHTML;
+}
+
+$('downloadHtml').addEventListener('click', async () => {
+  const button = $('downloadHtml');
+  const token = adminToken;
+  button.disabled = true;
+  try {
+    const config = await request('/api/admin/export', {}, token);
+    if (!$('admin').open || adminToken !== token) return;
+    const file = new Blob([configuredHtml(config)], {type: 'text/html;charset=utf-8'});
+    download(file, 'Lot_Entry_P_Standalone_Configured.html');
+    status('adminStatus', 'HTML downloaded with saved settings.');
+  } catch (error) {
+    status('adminStatus', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('export').addEventListener('click', async () => {
+  $('export').disabled = true;
+  try {
+    const book = await WorkbookFile.open(await workbookHandle.getFile());
+    download(await book.formattedExport(), 'Copy_' + workbookHandle.name);
+    status('tableStatus', 'Excel copy downloaded.');
+  } catch (error) {
+    status('tableStatus', error.message, true);
+  } finally {
+    $('tableStatus').dataset.source = 'export';
+    $('export').disabled = false;
+  }
+});
+let needsAdminSetup = false;
+$('openAdmin').onclick = async () => {
+  $('openAdmin').disabled = true;
+  try {
+    const data = await request('/api/today');
+    needsAdminSetup = !data.adminConfigured;
+    $('adminHint').textContent = needsAdminSetup
+      ? 'Set an admin password before sharing the workbook with users.'
+      : '';
+    $('login').querySelector('button').textContent = needsAdminSetup ? 'Set admin password' : 'Sign in';
+    status('adminStatus', '');
+    $('admin').showModal();
+  } catch (error) {
+    status('tableStatus', error.message, true);
+  } finally {
+    $('openAdmin').disabled = false;
+  }
+};
+$('closeAdmin').onclick = () => $('admin').close();
+$('admin').addEventListener('close', () => {
+  adminToken = '';
+  $('login').reset();
+  $('login').hidden = false;
+  $('settings').hidden = true;
+  $('changePassword').reset();
+  $('changePassword').hidden = true;
+});
+$('openPasswordChange').addEventListener('click', () => {
+  $('changePassword').reset();
+  $('changePassword').hidden = false;
+  $('settings').hidden = true;
+  status('adminStatus', '');
+  $('currentPassword').focus();
+});
+$('cancelPassword').addEventListener('click', () => {
+  $('changePassword').reset();
+  $('changePassword').hidden = true;
+  $('settings').hidden = false;
+  status('adminStatus', '');
+  $('openPasswordChange').focus();
+});
+$('changePassword').addEventListener('submit', async event => {
+  event.preventDefault();
+  const signedIn = adminToken;
+  const current = $('currentPassword').value;
+  const next = $('newPassword').value;
+  const confirm = $('confirmPassword').value;
+  const save = $('savePassword');
+  save.disabled = true;
+  $('cancelPassword').disabled = true;
+  try {
+    await request('/api/admin/change-password', {next, confirm}, current);
+    if (!$('admin').open || adminToken !== signedIn) return;
+    adminToken = next;
+    $('changePassword').reset();
+    $('changePassword').hidden = true;
+    $('settings').hidden = false;
+    status('adminStatus', 'Admin password changed.');
+    $('openPasswordChange').focus();
+  } catch (error) {
+    if ($('admin').open && adminToken === signedIn) status('adminStatus', error.message, true);
+  } finally {
+    save.disabled = false;
+    $('cancelPassword').disabled = false;
+  }
+});
+$('login').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('login').querySelector('button');
+  const token = $('password').value;
+  button.disabled = true;
+  try {
+    if (needsAdminSetup) {
+      await request('/api/admin/setup', {}, token);
+      needsAdminSetup = false;
+    }
+    await request('/api/admin/check', {}, token);
+    const data = await request('/api/today');
+    if (!$('admin').open) return;
+    adminToken = token;
+    $('masterPath').value = data.masterPath;
+    $('settingsFields').replaceChildren();
+    for (const field of CONFIG_FIELDS) {
+      const fieldset = element('fieldset');
+      fieldset.dataset.field = field;
+      fieldset.append(element('legend', field));
+      const mode = element('select');
+      for (const [value, title] of [['manual','Manual entry'], ['dropdown','Dropdown'], ['fixed','Fixed value']]) {
+        const option = element('option', title);
+        option.value = value;
+        mode.append(option);
+      }
+      mode.value = data.settings[field].mode;
+      mode.disabled = DROPDOWN_FIELDS.includes(field);
+      const options = element('textarea');
+      options.rows = 3;
+      options.className = 'option-list';
+      options.value = data.settings[field].options.join('\n');
+      const modeLabel = element('label', 'Input type');
+      modeLabel.append(mode);
+      const optionsLabel = element('label');
+      const optionsCaption = element('span');
+      optionsLabel.append(optionsCaption, options);
+      const isLot = field === 'Lot_No';
+      const formatLabel = element('label', isLot ? 'Format patterns (optional)' : 'Format pattern (optional)');
+      const pattern = element(isLot ? 'textarea' : 'input');
+      if (isLot) pattern.rows = 3;
+      pattern.className = 'format-pattern';
+      pattern.maxLength = isLot ? 2592 : 80;
+      pattern.value = data.settings[field].format || '';
+      formatLabel.append(pattern, element('small', isLot
+        ? 'One pattern per line. X = letter or digit, A = letter, 9 = digit. Example: XXXXXX.00.'
+        : 'A = letter, 9 = digit. Other characters are literal. Example: AA-9999.'));
+      const updateOptions = () => {
+        formatLabel.hidden = mode.value !== 'manual';
+        optionsLabel.hidden = mode.value === 'manual';
+        optionsCaption.textContent = mode.value === 'fixed' ? 'Fixed value' : 'Choices, one per line';
+        options.rows = mode.value === 'fixed' ? 1 : 3;
+      };
+      fieldset.append(modeLabel, optionsLabel, formatLabel);
+      modeLabel.hidden = mode.disabled;
+      if (field === 'Hold') {
+        const equivalents = element('div');
+        equivalents.className = 'hold-equivalents';
+        const saved = data.settings.Hold;
+        const values = new Map(saved.options.map((choice, index) => [choice, saved.equivalents?.[index] || '']));
+        const render = () => {
+          equivalents.replaceChildren();
+          for (const choice of optionLines(options.value).slice(0, 200)) {
+            const label = element('label', 'Equivalent value for ' + choice);
+            const input = element('input');
+            input.maxLength = 250;
+            input.value = values.get(choice) || '';
+            input.addEventListener('input', () => values.set(choice, input.value));
+            label.append(input);
+            equivalents.append(label);
+          }
+        };
+        options.addEventListener('input', render);
+        fieldset.append(equivalents);
+        render();
+      }
+      mode.addEventListener('change', updateOptions);
+      updateOptions();
+      $('settingsFields').append(fieldset);
+    }
+    $('login').reset();
+    $('login').hidden = true;
+    $('settings').hidden = false;
+    status('adminStatus', '');
+  } catch (error) {
+    status('adminStatus', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+function optionLines(text) {
+  return text.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+}
+
+$('settings').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('settings').querySelector('button');
+  const data = {masterPath: $('masterPath').value};
+  for (const fieldset of $('settingsFields').children) {
+    const field = fieldset.dataset.field;
+    const mode = fieldset.querySelector('select').value;
+    data[field] = {mode, options: optionLines(fieldset.querySelector('.option-list').value),
+      format: fieldset.querySelector('.format-pattern').value};
+    if (field === 'Hold') {
+      data.Hold.equivalents = Array.from(fieldset.querySelectorAll('.hold-equivalents input'), input => input.value);
+    }
+  }
+  button.disabled = true;
+  try {
+    await request('/api/admin/settings', data, adminToken);
+    status('adminStatus', 'Settings saved. Download HTML to include the master workbook path.');
+    await refresh();
+  } catch (error) {
+    status('adminStatus', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+restoreWorkbook();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
