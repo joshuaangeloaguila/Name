@@ -1,0 +1,1871 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lot Entry · Shared Workbook</title>
+<style>
+:root{font:15px/1.45 system-ui,sans-serif;color:#172b39;background:#f1f5f7}
+*{box-sizing:border-box} body{margin:0}
+header{background:#142a38;color:white}
+.bar,main{max-width:1240px;margin:auto;padding:18px 24px}
+.bar,.heading,.actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bar strong{font-size:1.05rem}
+main{padding-top:28px}
+section,dialog{background:white;border:1px solid #d4dfe5;border-radius:14px;padding:24px;margin-bottom:20px}
+h1,h2{margin:0;font-weight:660;letter-spacing:-.025em} h1{font-size:1.75rem} h2{font-size:1.25rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:20px 0}
+#fields{grid-template-columns:repeat(4,minmax(0,1fr));align-items:start;gap:14px 16px}
+#fields>label{min-width:0;align-content:start}
+#fields input,#fields select:not([multiple]){height:40px}
+#fields>.hold-field{grid-column:1/-1}
+#fields .hold-field select[multiple]{min-height:9.5rem}
+@media(max-width:920px){#fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){#fields{grid-template-columns:minmax(0,1fr)}}
+label{display:grid;gap:5px;font-weight:550}
+input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;padding:9px;border:1px solid #9fb2be;border-radius:7px;background:white;color:inherit}
+button{border:1px solid #99adb9;border-radius:7px;background:white;color:#173340;padding:8px 13px;cursor:pointer;font-weight:600}
+button.primary{background:#08685f;color:white;border-color:#08685f}
+button:disabled{opacity:.55;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #2db6a3;outline-offset:2px}
+.history-actions,.date-range{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.date-range label{gap:3px;font-size:.8rem;color:#46616f}
+.date-range input{width:9.5rem;min-height:36px;padding:5px 8px;font-size:.9rem;cursor:pointer}
+.date-range input:disabled{cursor:default}
+.date-range input::-webkit-calendar-picker-indicator{cursor:pointer}
+.history-actions button{min-height:36px;padding:6px 10px}
+.field-error{color:#a0222d;font-weight:400}.entry-invalid{border-color:#a0222d;background:#fff5f6}
+.submission-banner{box-sizing:border-box;width:100%;background:#edf8f4;border:1px solid #84b6a6;border-radius:8px;padding:9px 11px;margin:10px 0;font-size:12px;line-height:1.3}
+.submission-banner h2{font-size:14px}.submission-banner p{margin:3px 0}
+.submission-banner dl{display:grid;gap:2px;margin:6px 0 8px}
+.submission-banner dl>div{display:flex;gap:5px;align-items:baseline}
+.submission-banner button{padding:4px 8px}
+.submission-banner dt{font-weight:600}.submission-banner dd{min-width:0;margin:0;overflow-wrap:anywhere;white-space:pre-line}
+.hold-lines{white-space:pre-line}.hold-group{margin:10px 0;padding:8px;border:1px solid #d4dfe5;border-radius:6px}
+.table-wrap{overflow:auto;margin-top:14px}
+table{border-collapse:collapse;width:100%;white-space:nowrap;font-size:.9rem}
+th,td{text-align:left;padding:10px 9px;border-bottom:1px solid #dae4e9}
+th{background:#e8f0f3;color:#213746}td:first-child{font-variant-numeric:tabular-nums}
+tbody tr:nth-child(even){background:#f7fafb}.empty{text-align:center;color:#46616f}
+small{color:#46616f} .status{color:#08685f}.status[data-error="true"]{color:#a0222d}
+dialog{width:min(800px,calc(100% - 24px));max-height:90vh;margin:auto}
+dialog::backdrop{background:#142a38aa}
+fieldset{border:1px solid #d4dfe5;border-radius:8px;min-width:0}
+legend{font-weight:650} input[readonly]{background:#eef3f6} label[hidden]{display:none} .hold-equivalents{margin-top:12px;overflow-wrap:anywhere} textarea{resize:vertical} .admin-form label+label{margin-top:8px}
+</style>
+</head>
+<body>
+<header><div class="bar"><strong>Lot Entry</strong><div class="actions"><button id="connect" type="button">Connect Workbook</button><button id="openAdmin" type="button" disabled>Admin settings</button></div></div></header>
+<main>
+  <section>
+    <h1 id="entryTitle">New submission</h1>
+    <p id="workbookName">Connect the shared .xlsx workbook to get started.</p><small>Take turns saving. Keep the master workbook closed in Excel.</small>
+    <p id="masterPathHint" hidden></p>
+    <div id="submissionBanner" class="submission-banner" hidden>
+      <h2 id="completionTitle" tabindex="-1">Submission complete</h2>
+      <p id="completionTime"></p>
+      <dl id="completionDetails"></dl>
+      <button id="dismissSummary" type="button">Dismiss</button>
+    </div>
+    <form id="entry" novalidate>
+      <div id="fields" class="grid"></div>
+      <div class="actions">
+        <button class="primary" id="save" disabled>Save submission</button>
+        <button id="cancelEdit" type="button" hidden>Cancel edit</button>
+        <span id="saveStatus" class="status" role="status"></span>
+      </div>
+    </form>
+  </section>
+  <section>
+    <div class="heading">
+      <div><h2 id="tableHeading">Today’s Submissions</h2><small id="date"></small></div>
+      <div class="history-actions">
+        <div class="date-range" role="group" aria-label="Submission date range">
+          <label for="startDate">Start date<input id="startDate" type="date" disabled></label>
+          <label for="endDate">End date<input id="endDate" type="date" disabled></label>
+        </div>
+        <button id="refreshRows" type="button" disabled>Refresh</button>
+        <button id="export" type="button" disabled>Download Excel</button>
+      </div>
+    </div>
+    <div class="table-wrap" tabindex="0" aria-label="Saved submissions table">
+      <table><thead id="columns"></thead><tbody id="rows"></tbody></table>
+    </div>
+    <p id="tableStatus" class="status" role="status"></p>
+  </section>
+</main>
+<dialog id="admin">
+  <div class="heading"><h2>Admin settings</h2><button id="closeAdmin" type="button">Close</button></div>
+  <form id="login" class="admin-form">
+    <p><label>Admin password<input id="password" type="password" autocomplete="current-password" required></label></p>
+    <small id="adminHint"></small><p><button class="primary">Sign in</button></p>
+  </form>
+  <form id="settings" class="admin-form" hidden>
+    <label>Master workbook path
+      <input id="masterPath" type="text" maxlength="1024" placeholder="\\server\folder\Master.xlsx">
+    </label>
+    <div class="grid" id="settingsFields"></div>
+    <div class="actions">
+      <button class="primary" type="submit">Save settings</button>
+      <button id="downloadHtml" type="button">Download HTML</button>
+      <button id="openPasswordChange" type="button">Change password</button>
+    </div>
+  </form>
+  <form id="changePassword" class="admin-form" hidden>
+    <p><label>Current password<input id="currentPassword" type="password" autocomplete="current-password" required></label></p>
+    <p><label>New password<input id="newPassword" type="password" autocomplete="new-password" required></label></p>
+    <p><label>Confirm new password<input id="confirmPassword" type="password" autocomplete="new-password" required></label></p>
+    <div class="actions">
+      <button id="savePassword" class="primary" type="submit">Save password</button>
+      <button id="cancelPassword" type="button">Cancel</button>
+    </div>
+  </form>
+  <p id="adminStatus" class="status" role="status"></p>
+</dialog>
+<script id="embeddedSettings" type="application/json">{}</script>
+<script>
+const $ = id => document.getElementById(id);
+const htmlTemplate = document.documentElement.cloneNode(true);
+const embeddedSettings = JSON.parse($('embeddedSettings').textContent);
+const embeddedMasterPath = embeddedSettings.masterPath || '';
+let fieldNames = [], configSignature = '', adminToken = '', refreshNumber = 0;
+function element(tag, text) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function status(id, message, error = false) {
+  $(id).textContent = message;
+  $(id).dataset.error = error;
+}
+const FIELDS = ['Part_ID', 'SCHEDULE_ID', 'QTY', 'Insertion', 'Customer Insertion', 'LOT_NO', 'Wafer ID', 'HOLD'];
+const WAFER_INDEX = FIELDS.indexOf('Wafer ID');
+const LOT_INDEX = FIELDS.indexOf('LOT_NO');
+const HOLD_INDEX = FIELDS.indexOf('HOLD');
+const DISPLAY_FIELDS = [...FIELDS];
+DISPLAY_FIELDS.splice(WAFER_INDEX + 1, 0, 'Wafer ID');
+const COMMENT_FIELDS = ['Release', 'Scrap', 'Retest', 'Inkout', 'Hold'];
+const OWNER_COLUMN = 'Q';
+const XML = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const PKG = 'http://schemas.openxmlformats.org/package/2006/relationships';
+const TYPES = 'http://schemas.openxmlformats.org/package/2006/content-types';
+const SETTINGS = '_LotEntrySettings';
+const encoder = new TextEncoder();
+const decoder = new TextDecoder('utf-8', {fatal: true});
+const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MAX_BYTES = 50 * 1024 * 1024;
+
+const crcTable = Array.from({length: 256}, (_, index) => {
+  for (let bit = 0; bit < 8; bit++) index = (index >>> 1) ^ ((index & 1) ? 0xedb88320 : 0);
+  return index >>> 0;
+});
+function crc32(bytes) {
+  let value = -1;
+  for (const byte of bytes) value = (value >>> 8) ^ crcTable[(value ^ byte) & 255];
+  return (value ^ -1) >>> 0;
+}
+class Zip {
+  constructor(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+    let end = bytes.length - 22;
+    while (end >= Math.max(0, bytes.length - 65557)) {
+      if (view.getUint32(end, true) === 0x06054b50 &&
+          end + 22 + view.getUint16(end + 20, true) === bytes.length) break;
+      end--;
+    }
+    if (end < Math.max(0, bytes.length - 65557) || view.getUint16(end + 4, true) ||
+        view.getUint16(end + 6, true)) throw new Error('Select a standard, unencrypted .xlsx workbook.');
+    this.entries = new Map();
+    let offset = view.getUint32(end + 16, true);
+    const count = view.getUint16(end + 10, true);
+    let totalSize = 0;
+    if (count === 65535 || offset > end) throw new Error('This workbook uses an unsupported ZIP format.');
+    for (let index = 0; index < count; index++) {
+      if (offset + 46 > end || view.getUint32(offset, true) !== 0x02014b50) throw new Error('Invalid workbook archive.');
+      const flags = view.getUint16(offset + 8, true);
+      const method = view.getUint16(offset + 10, true);
+      const crc = view.getUint32(offset + 16, true);
+      const packed = view.getUint32(offset + 20, true);
+      const size = view.getUint32(offset + 24, true);
+      const nameLength = view.getUint16(offset + 28, true);
+      const name = decoder.decode(bytes.subarray(offset + 46, offset + 46 + nameLength));
+      const start = view.getUint32(offset + 42, true);
+      totalSize += size;
+      if (flags & 1 || ![0, 8].includes(method) || start + 30 > end ||
+          totalSize > 4 * MAX_BYTES || this.entries.has(name) ||
+          view.getUint32(start, true) !== 0x04034b50) throw new Error('Unsupported workbook archive.');
+      const dataStart = start + 30 + view.getUint16(start + 26, true) + view.getUint16(start + 28, true);
+      if (dataStart + packed > end) throw new Error('Invalid workbook archive.');
+      this.entries.set(name, {method, size, crc, data: bytes.subarray(dataStart, dataStart + packed)});
+      offset += 46 + nameLength + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
+    }
+  }
+  async read(name) {
+    const entry = this.entries.get(name);
+    if (!entry) throw new Error('Workbook component missing: ' + name);
+    const stream = new Blob([entry.data]).stream();
+    const data = entry.method === 8
+      ? new Uint8Array(await new Response(stream.pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())
+      : entry.data;
+    if (data.length !== entry.size || crc32(data) !== entry.crc) throw new Error('The workbook archive is damaged.');
+    return decoder.decode(data);
+  }
+  async put(name, source) {
+    const data = encoder.encode(source);
+    const compressed = new Uint8Array(await new Response(
+      new Blob([data]).stream().pipeThrough(new CompressionStream('deflate-raw'))
+    ).arrayBuffer());
+    this.entries.set(name, {method: 8, size: data.length, crc: crc32(data), data: compressed});
+  }
+  blob() {
+    const local = [], central = [];
+    let offset = 0, centralSize = 0;
+    for (const [name, entry] of this.entries) {
+      const filename = encoder.encode(name);
+      const header = (length, signature) => {
+        const view = new DataView(new ArrayBuffer(length));
+        view.setUint32(0, signature, true);
+        return view;
+      };
+      const record = header(30, 0x04034b50);
+      const directory = header(46, 0x02014b50);
+      for (const [view, shift] of [[record, 0], [directory, 2]]) {
+        view.setUint16(4 + shift, 20, true);
+        view.setUint16(6 + shift, 0x800, true);
+        view.setUint16(8 + shift, entry.method, true);
+        view.setUint16(12 + shift, 33, true);
+        view.setUint32(14 + shift, entry.crc, true);
+        view.setUint32(18 + shift, entry.data.length, true);
+        view.setUint32(22 + shift, entry.size, true);
+        view.setUint16(26 + shift, filename.length, true);
+      }
+      directory.setUint16(4, 20, true);
+      directory.setUint32(42, offset, true);
+      local.push(record.buffer, filename, entry.data);
+      central.push(directory.buffer, filename);
+      offset += 30 + filename.length + entry.data.length;
+      centralSize += 46 + filename.length;
+    }
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, this.entries.size, true);
+    end.setUint16(10, this.entries.size, true);
+    end.setUint32(12, centralSize, true);
+    end.setUint32(16, offset, true);
+    return new Blob([...local, ...central, end.buffer], {type: XLSX_TYPE});
+  }
+}
+function parse(source) {
+  const xml = new DOMParser().parseFromString(source, 'application/xml');
+  if (xml.querySelector('parsererror') || xml.doctype) throw new Error('Unsupported workbook XML.');
+  return xml;
+}
+const serialize = node => new XMLSerializer().serializeToString(node);
+const nodes = (node, name, ns = XML) => Array.from(node.getElementsByTagNameNS(ns, name));
+function append(parent, tag, attrs = {}, value, ns = XML) {
+  const node = parent.ownerDocument.createElementNS(ns, tag);
+  for (const [key, val] of Object.entries(attrs)) node.setAttribute(key, val);
+  if (value !== undefined) node.textContent = value;
+  parent.append(node);
+  return node;
+}
+function cell(row, address, value, style) {
+  const numeric = typeof value === 'number';
+  const attributes = {r: address};
+  if (style !== undefined) attributes.s = style;
+  if (!numeric && value !== undefined) attributes.t = 'inlineStr';
+  const entry = append(row, 'c', attributes);
+  if (numeric) append(entry, 'v', {}, value);
+  else if (value !== undefined) {
+    const text = append(append(entry, 'is'), 't', {}, value);
+    text.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+  }
+}
+function col(index) { return String.fromCharCode(65 + index); }
+function excelColumn(position) {
+  let column = '';
+  while (position) {
+    position--;
+    column = col(position % 26) + column;
+    position = Math.floor(position / 26);
+  }
+  return column;
+}
+function dateAndTime() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date());
+  const p = Object.fromEntries(parts.map(({type, value}) => [type, value]));
+  return {date: [p.year, p.month, p.day].join('-'), time: [p.hour, p.minute, p.second].join(':')};
+}
+function displayTime(value) {
+  if (typeof value !== 'number') return value;
+  const seconds = Math.round(value * 86400) % 86400;
+  return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]
+    .map(part => String(part).padStart(2, '0')).join(':');
+}
+const blankSettings = () => Object.fromEntries(FIELDS.map(field =>
+  [field, embeddedSettings[field] ? structuredClone(embeddedSettings[field]) : {mode: 'manual', options: []}]
+));
+
+class WorkbookFile {
+  static async open(file) {
+    if (file.size > MAX_BYTES) throw new Error('This version supports workbooks up to 50 MB.');
+    const book = new WorkbookFile();
+    book.zip = new Zip(await file.arrayBuffer());
+    book.main = parse(await book.zip.read('xl/workbook.xml'));
+    book.rels = parse(await book.zip.read('xl/_rels/workbook.xml.rels'));
+    book.types = parse(await book.zip.read('[Content_Types].xml'));
+    book.sheets = nodes(book.main, 'sheets')[0];
+    if (!book.sheets || book.zip.entries.has('xl/vbaProject.bin') ||
+        [...book.zip.entries.keys()].some(name => name.startsWith('_xmlsignatures/'))) {
+      throw new Error('Use an unsigned standard .xlsx workbook without macros.');
+    }
+    book.strings = [];
+    const shared = book.partForType('sharedStrings');
+    if (shared) {
+      book.strings = nodes(parse(await book.zip.read(shared)), 'si')
+        .map(item => nodes(item, 't').map(text => text.textContent).join(''));
+    }
+    return book;
+  }
+  relationships() { return nodes(this.rels, 'Relationship', PKG); }
+  partForType(type) {
+    const rel = this.relationships().find(link => link.getAttribute('Type') === REL + '/' + type);
+    return rel ? this.resolve(rel) : null;
+  }
+  resolve(link) {
+    if (link.getAttribute('TargetMode') === 'External') throw new Error('External worksheet links are unsupported.');
+    const target = new URL(link.getAttribute('Target'), 'https://workbook.invalid/xl/workbook.xml');
+    if (target.origin !== 'https://workbook.invalid') throw new Error('Invalid workbook relationship.');
+    return decodeURIComponent(target.pathname.slice(1));
+  }
+  async sheet(name) {
+    const ref = nodes(this.sheets, 'sheet').find(sheet => sheet.getAttribute('name') === name);
+    if (!ref) return null;
+    const rel = this.relationships().find(link => link.getAttribute('Id') === ref.getAttributeNS(REL, 'id'));
+    if (!rel || rel.getAttribute('Type') !== REL + '/worksheet') throw new Error('Unsupported worksheet relationship.');
+    const path = this.resolve(rel);
+    return {path, doc: parse(await this.zip.read(path))};
+  }
+  makeSheet(name, hidden = false) {
+    let number = 1;
+    while (this.zip.entries.has('xl/worksheets/lot-entry-' + number + '.xml')) number++;
+    const target = 'worksheets/lot-entry-' + number + '.xml';
+    const path = 'xl/' + target;
+    const used = new Set(this.relationships().map(link => link.getAttribute('Id')));
+    let id = 1;
+    while (used.has('rIdLotEntry' + id)) id++;
+    const relationship = 'rIdLotEntry' + id;
+    const sheetId = Math.max(0, ...nodes(this.sheets, 'sheet').map(sheet => +sheet.getAttribute('sheetId'))) + 1;
+    const attributes = {name, sheetId};
+    if (hidden) attributes.state = 'veryHidden';
+    const ref = append(this.sheets, 'sheet', attributes);
+    ref.setAttributeNS(REL, 'r:id', relationship);
+    append(this.rels.documentElement, 'Relationship', {Id: relationship, Type: REL + '/worksheet', Target: target}, undefined, PKG);
+    append(this.types.documentElement, 'Override', {
+      PartName: '/' + path,
+      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml'
+    }, undefined, TYPES);
+    return {path, doc: parse('<worksheet xmlns="' + XML + '"><sheetData/></worksheet>')};
+  }
+  async writeSheet(sheet) {
+    await this.zip.put(sheet.path, serialize(sheet.doc));
+    await this.zip.put('xl/workbook.xml', serialize(this.main));
+    await this.zip.put('xl/_rels/workbook.xml.rels', serialize(this.rels));
+    await this.zip.put('[Content_Types].xml', serialize(this.types));
+  }
+  value(entry) {
+    if (!entry) return '';
+    const type = entry.getAttribute('t');
+    if (type === 'inlineStr') return nodes(entry, 't').map(text => text.textContent).join('');
+    const value = nodes(entry, 'v')[0]?.textContent;
+    if (value === undefined) return '';
+    if (type === 's') return this.strings[+value] ?? '';
+    return !type || type === 'n' ? Number(value) : value;
+  }
+  async preferences() {
+    const sheet = await this.sheet(SETTINGS);
+    if (!sheet) return {config: blankSettings(), auth: null, masterPath: embeddedMasterPath};
+    const rows = nodes(sheet.doc, 'row');
+    const header = nodes(rows[0], 'c');
+    const auth = JSON.parse(this.value(header[0]));
+    const savedPath = header.find(entry => entry.getAttribute('r') === 'B1');
+    const masterPath = savedPath ? this.value(savedPath) : embeddedMasterPath;
+    const config = blankSettings();
+    const savedFormats = header.find(entry => entry.getAttribute('r') === 'C1');
+    const formats = savedFormats ? JSON.parse(this.value(savedFormats)) : {};
+    for (const [index, field] of FIELDS.entries()) {
+      const values = nodes(rows[index + 1], 'c').map(entry => this.value(entry));
+      config[field] = {mode: values[0], options: values.slice(1)};
+      if (formats[field]) config[field].format = formats[field];
+    }
+    for (const [index, field] of ['HOLD', 'Insertion'].entries()) {
+      const equivalentRow = rows.find(row => row.getAttribute('r') === String(FIELDS.length + 2 + index));
+      if (equivalentRow) {
+        const values = nodes(equivalentRow, 'c').map(entry => this.value(entry));
+        if (values[0] === field + ' equivalents') config[field].equivalents = values.slice(1);
+      }
+    }
+    const groups = rows.filter(row => +row.getAttribute('r') >= FIELDS.length + 4)
+      .map(row => nodes(row, 'c').map(entry => this.value(entry)))
+      .filter(values => values[0] === 'Insertion HOLD');
+    if (groups.length) {
+      config.Insertion.holdGroups = Object.fromEntries(groups.map(([, insertion, ...choices]) =>
+        [insertion, choices.map(choice => JSON.parse(choice))]));
+    }
+    return {config, auth, masterPath};
+  }
+  async savePreferences({config, auth, masterPath = embeddedMasterPath}) {
+    const sheet = await this.sheet(SETTINGS) || this.makeSheet(SETTINGS, true);
+    const data = nodes(sheet.doc, 'sheetData')[0];
+    data.replaceChildren();
+    const header = append(data, 'row', {r: 1});
+    cell(header, 'A1', JSON.stringify(auth));
+    cell(header, 'B1', masterPath);
+    const formats = Object.fromEntries(FIELDS.filter(field => config[field].format)
+      .map(field => [field, config[field].format]));
+    cell(header, 'C1', JSON.stringify(formats));
+    const equivalentRows = new Map();
+    for (const [index, field] of ['HOLD', 'Insertion'].entries()) {
+      if (config[field].equivalents) {
+        const number = FIELDS.length + 2 + index;
+        const row = data.ownerDocument.createElementNS(XML, 'row');
+        row.setAttribute('r', number);
+        cell(row, 'A' + number, field + ' equivalents');
+        equivalentRows.set(field, row);
+      }
+    }
+    for (const [index, field] of FIELDS.entries()) {
+      const rowNumber = index + 2;
+      const row = append(data, 'row', {r: rowNumber});
+      cell(row, 'A' + rowNumber, config[field].mode);
+      for (const [optionIndex, value] of config[field].options.entries()) {
+        const column = excelColumn(optionIndex + 2);
+        cell(row, column + rowNumber, value);
+        const mapping = equivalentRows.get(field);
+        if (mapping) cell(mapping, column + mapping.getAttribute('r'), config[field].equivalents[optionIndex]);
+      }
+    }
+    for (const row of equivalentRows.values()) data.append(row);
+    for (const [index, [insertion, choices]] of Object.entries(config.Insertion.holdGroups || {}).entries()) {
+      const number = FIELDS.length + 4 + index;
+      const row = append(data, 'row', {r: number});
+      cell(row, 'A' + number, 'Insertion HOLD');
+      cell(row, 'B' + number, insertion);
+      choices.forEach((choice, choiceIndex) => cell(row, excelColumn(choiceIndex + 3) + number, JSON.stringify(choice)));
+    }
+    await this.writeSheet(sheet);
+  }
+  async styles() {
+    const path = this.partForType('styles');
+    if (!path) return {};
+    const doc = parse(await this.zip.read(path));
+    const fills = nodes(doc, 'fills')[0];
+    const formats = nodes(doc, 'cellXfs')[0];
+    if (!fills || !formats) return {};
+    const result = {};
+    for (const [key, color, numFmtId] of [
+      ['yellow', 'FFFFFF00', 0], ['blue', 'FF00B2E2', 0], ['time', null, 21]
+    ]) {
+      // Reuse equivalent formats so repeated saves do not grow the style table.
+      let fillId = 0;
+      if (color) {
+        const patterns = nodes(fills, 'fill');
+        fillId = patterns.findIndex(fill => nodes(fill, 'fgColor')[0]?.getAttribute('rgb') === color &&
+          nodes(fill, 'patternFill')[0]?.getAttribute('patternType') === 'solid');
+        if (fillId < 0) {
+          fillId = patterns.length;
+          const pattern = append(append(fills, 'fill'), 'patternFill', {patternType: 'solid'});
+          append(pattern, 'fgColor', {rgb: color});
+          fills.setAttribute('count', fillId + 1);
+        }
+      }
+      const formatsList = nodes(formats, 'xf');
+      let style = formatsList.findIndex(xf => +xf.getAttribute('numFmtId') === numFmtId &&
+        +xf.getAttribute('fillId') === fillId && xf.getAttribute('fontId') === '0' &&
+        xf.getAttribute('borderId') === '0' && xf.getAttribute(color ? 'applyFill' : 'applyNumberFormat') === '1');
+      if (style < 0) {
+        style = formatsList.length;
+        append(formats, 'xf', {numFmtId, fontId: 0, fillId, borderId: 0, xfId: 0,
+          [color ? 'applyFill' : 'applyNumberFormat']: 1});
+        formats.setAttribute('count', style + 1);
+      }
+      result[key] = style;
+    }
+    const formatsList = nodes(formats, 'xf');
+    let wrap = formatsList.findIndex(xf => xf.getAttribute('applyAlignment') === '1' &&
+      nodes(xf, 'alignment')[0]?.getAttribute('wrapText') === '1' &&
+      ['numFmtId', 'fontId', 'fillId', 'borderId'].every(key => xf.getAttribute(key) === '0'));
+    if (wrap < 0) {
+      wrap = formatsList.length;
+      append(append(formats, 'xf', {numFmtId: 0, fontId: 0, fillId: 0, borderId: 0, xfId: 0,
+        applyAlignment: 1}), 'alignment', {wrapText: 1, vertical: 'top'});
+      formats.setAttribute('count', wrap + 1);
+    }
+    result.holdWrap = wrap;
+    await this.zip.put(path, serialize(doc));
+    return result;
+  }
+  checkLayout(sheet, allowUnknown = false) {
+    const data = nodes(sheet.doc, 'sheetData')[0];
+    const heading = nodes(data, 'row').find(row => row.getAttribute('r') === '2');
+    const top = nodes(data, 'row').find(row => row.getAttribute('r') === '1');
+    const headers = new Map([...(top ? nodes(top, 'c') : []), ...(heading ? nodes(heading, 'c') : [])]
+      .map(entry => [entry.getAttribute('r'), this.value(entry)]));
+    const matches = fields => ['Saved Time', ...fields, ...COMMENT_FIELDS].every((header, index) => {
+      const column = col(index);
+      return headers.get(column + '2') === header ||
+        (index <= fields.length && headers.get(column + '1') === header);
+    });
+    if (matches(DISPLAY_FIELDS)) return {data, legacy: false};
+    if (matches(FIELDS)) return {data, legacy: true};
+    if (allowUnknown) return null;
+    throw new Error('The worksheet for this date already exists with a different layout.');
+  }
+  async exportRange(startDate, endDate) {
+    checkDateRange(startDate, endDate);
+    if (!startDate && !endDate) return this.formattedExport();
+    const dates = nodes(this.sheets, 'sheet').map(ref => ref.getAttribute('name'))
+      .filter(name => /^\d{4}-\d{2}-\d{2}$/.test(name) &&
+        (!startDate || name >= startDate) && (!endDate || name <= endDate));
+    if (!dates.length) throw new Error('No date tabs match the selected dates.');
+    const template = Uint8Array.from(atob('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'), char => char.charCodeAt(0));
+    const report = await WorkbookFile.open(new Blob([template]));
+    const first = nodes(report.sheets, 'sheet')[0];
+    first.setAttribute('name', dates[0]);
+    const styles = this.partForType('styles');
+    if (styles) await report.zip.put(report.partForType('styles'), await this.zip.read(styles));
+    for (const date of dates) {
+      const source = await this.sheet(date);
+      const target = date === dates[0] ? await report.sheet(date) : report.makeSheet(date);
+      const root = target.doc.documentElement;
+      root.replaceChildren();
+      for (const tag of ['cols', 'sheetData', 'mergeCells']) {
+        const section = nodes(source.doc, tag)[0];
+        if (section) root.append(section.cloneNode(true));
+      }
+      for (const entry of nodes(root, 'c')) {
+        if (entry.getAttribute('t') === 's') {
+          const value = this.value(entry);
+          entry.replaceChildren();
+          entry.setAttribute('t', 'inlineStr');
+          const text = append(append(entry, 'is'), 't', {}, value);
+          text.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+        }
+        nodes(entry, 'f')[0]?.remove();
+      }
+      await report.writeSheet(target);
+    }
+    return report.formattedExport();
+  }
+  async formattedExport() {
+    const stylesPath = this.partForType('styles');
+    const styles = stylesPath ? parse(await this.zip.read(stylesPath)) : null;
+    const formats = styles && nodes(styles, 'cellXfs')[0];
+    const originals = formats ? nodes(formats, 'xf') : [];
+    const centered = new Map();
+    const center = entry => {
+      if (!originals.length) return;
+      const index = Number(entry.getAttribute('s') || 0);
+      const original = originals[index] || originals[0];
+      const previous = nodes(original, 'alignment')[0];
+      if (previous?.getAttribute('horizontal') === 'center' && previous.getAttribute('vertical') === 'center') return;
+      if (!centered.has(index)) {
+        const style = original.cloneNode(true);
+        const alignment = nodes(style, 'alignment')[0] || append(style, 'alignment');
+        alignment.setAttribute('horizontal', 'center');
+        alignment.setAttribute('vertical', 'center');
+        style.setAttribute('applyAlignment', '1');
+        centered.set(index, originals.length + centered.size);
+        formats.append(style);
+      }
+      entry.setAttribute('s', centered.get(index));
+    };
+    for (const entry of nodes(this.sheets, 'sheet')) {
+      const name = entry.getAttribute('name');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(name)) continue;
+      const sheet = await this.sheet(name);
+      const layout = this.checkLayout(sheet, true);
+      if (!layout) continue;
+      if (layout.legacy) this.migrateWaferColumn(sheet, layout.data);
+      this.mergeOutputHeaders(sheet, layout.data);
+      for (const value of nodes(layout.data, 'c')) {
+        if (/^[A-P][0-9]+$/.test(value.getAttribute('r'))) center(value);
+      }
+      await this.zip.put(sheet.path, serialize(sheet.doc));
+    }
+    if (centered.size) {
+      formats.setAttribute('count', originals.length + centered.size);
+      await this.zip.put(stylesPath, serialize(styles));
+    }
+    return this.zip.blob();
+  }
+  mergeOutputHeaders(sheet, data) {
+    const rows = nodes(data, 'row');
+    const top = rows.find(row => row.getAttribute('r') === '1');
+    const bottom = rows.find(row => row.getAttribute('r') === '2');
+    if (!top || !bottom) return;
+    const root = sheet.doc.documentElement;
+    let merges = nodes(root, 'mergeCells')[0];
+    if (!merges) {
+      const after = nodes(root, 'autoFilter')[0] || data;
+      merges = append(root, 'mergeCells');
+      root.insertBefore(merges, after.nextSibling);
+    }
+    const refs = new Set(nodes(merges, 'mergeCell').map(entry => entry.getAttribute('ref')));
+    const addMerge = ref => {
+      if (refs.has(ref)) return;
+      append(merges, 'mergeCell', {ref});
+      refs.add(ref);
+    };
+    const lower = new Map(nodes(bottom, 'c').map(entry => [entry.getAttribute('r'), entry]));
+    for (let index = 0; index <= DISPLAY_FIELDS.length; index++) {
+      const column = col(index);
+      const upperAddress = column + '1';
+      const lowerCell = lower.get(column + '2');
+      if (lowerCell && this.value(lowerCell) !== '') {
+        const topCells = nodes(top, 'c');
+        const upperCell = topCells.find(entry => entry.getAttribute('r') === upperAddress);
+        if (upperCell && this.value(upperCell) !== '') continue;
+        const next = topCells.find(entry => {
+          const address = entry.getAttribute('r');
+          return !/^[A-Z][0-9]+$/.test(address) || address[0] > column;
+        });
+        upperCell?.remove();
+        lowerCell.setAttribute('r', upperAddress);
+        top.insertBefore(lowerCell, next || null);
+      }
+      addMerge(upperAddress + ':' + column + '2');
+    }
+    addMerge('K1:O1');
+    addMerge('P1:P2');
+    merges.setAttribute('count', refs.size);
+  }
+  readRecord(row, date, legacy) {
+    const number = row.getAttribute('r');
+    const entries = new Map(nodes(row, 'c').map(entry => [entry.getAttribute('r'), entry]));
+    const read = column => this.value(entries.get(column + number));
+    const time = read('A');
+    const values = FIELDS.map((_, index) => read(col(index + 1 + (!legacy && index > WAFER_INDEX ? 1 : 0))));
+    const waferId = legacy ? combinedWaferId(values[LOT_INDEX], values[WAFER_INDEX]) : read('I');
+    const metadata = read(legacy ? 'P' : OWNER_COLUMN);
+    const [owner, id] = typeof metadata === 'string' && /^[a-f0-9]{64}:[a-f0-9-]{36}$/.test(metadata)
+      ? metadata.split(':') : ['', ''];
+    return {date, time: time === '' ? '' : displayTime(time), values, waferId, owner, id};
+  }
+  async today(date) {
+    const sheet = await this.sheet(date);
+    if (!sheet) return [];
+    const {data, legacy} = this.checkLayout(sheet);
+    return nodes(data, 'row').filter(row => +row.getAttribute('r') >= 3)
+      .map(row => this.readRecord(row, date, legacy)).filter(record => record.time !== '').reverse();
+  }
+  migrateWaferColumn(sheet, data) {
+    const root = sheet.doc.documentElement;
+    const shift = ref => ref.replace(/(\$?)([A-Z]{1,3})(\$?[0-9]+)/g, (match, anchor, letters, row) => {
+      const position = Array.from(letters).reduce((n, letter) => n * 26 + letter.charCodeAt(0) - 64, 0);
+      return position >= 9 ? anchor + excelColumn(position + 1) + row : match;
+    });
+    const rows = nodes(data, 'row');
+    for (const row of rows) {
+      row.removeAttribute('spans');
+      for (const entry of nodes(row, 'c')) entry.setAttribute('r', shift(entry.getAttribute('r')));
+    }
+    for (const tag of ['dimension', 'mergeCell', 'autoFilter']) {
+      for (const entry of nodes(root, tag)) entry.setAttribute('ref', shift(entry.getAttribute('ref')));
+    }
+    let widths = nodes(root, 'cols')[0];
+    if (!widths) {
+      widths = append(root, 'cols');
+      root.insertBefore(widths, data);
+    }
+    for (const column of nodes(widths, 'col')) {
+      const min = +column.getAttribute('min');
+      const max = +column.getAttribute('max');
+      if (min >= 9) column.setAttribute('min', min + 1);
+      if (max >= 9) column.setAttribute('max', max + 1);
+      if (min < 9 && max >= 9) {
+        const remainder = column.cloneNode(true);
+        remainder.setAttribute('min', 10);
+        column.setAttribute('max', 8);
+        widths.insertBefore(remainder, column.nextSibling);
+      }
+    }
+    const after = nodes(widths, 'col').find(column => +column.getAttribute('min') > 9);
+    const width = append(widths, 'col', {min: 9, max: 9, width: 20, customWidth: 1});
+    widths.insertBefore(width, after || null);
+    for (const row of rows) {
+      const number = +row.getAttribute('r');
+      if (number < 2) continue;
+      const entries = nodes(row, 'c');
+      const cellAt = column => entries.find(entry => entry.getAttribute('r') === column + number);
+      const waferId = number === 2 ? 'Wafer ID' : combinedWaferId(this.value(cellAt('G')), this.value(cellAt('H')));
+      if (!waferId) continue;
+      const before = entries.find(entry => /^(?:[J-Z]|[A-Z]{2,})[0-9]+$/.test(entry.getAttribute('r')));
+      cell(row, 'I' + number, waferId, cellAt('H')?.getAttribute('s') ?? undefined);
+      if (before) row.insertBefore(row.lastElementChild, before);
+    }
+  }
+  async history(startDate = '', endDate = '') {
+    const dates = nodes(this.sheets, 'sheet').map(sheet => sheet.getAttribute('name'))
+      .filter(name => /^\d{4}-\d{2}-\d{2}$/.test(name) &&
+        (!startDate || name >= startDate) && (!endDate || name <= endDate)).sort().reverse();
+    const rows = [];
+    for (const date of dates) {
+      for (const row of await this.today(date)) rows.push(row);
+    }
+    return rows;
+  }
+  async add(date, time, values, owner) {
+    let sheet = await this.sheet(date);
+    const style = await this.styles();
+    if (!sheet) {
+      sheet = this.makeSheet(date);
+      const root = sheet.doc.documentElement;
+      const data = nodes(root, 'sheetData')[0];
+      const widths = append(root, 'cols');
+      root.insertBefore(widths, data);
+      for (const [index, width] of [16, 18, 19, 16, 17, 23, 17, 16, 20, 14, 14, 14, 14, 14, 14, 36].entries()) {
+        append(widths, 'col', {min: index + 1, max: index + 1, width, customWidth: 1});
+      }
+      const first = append(data, 'row', {r: 1});
+      cell(first, 'K1', 'Comment', style.blue);
+      cell(first, 'P1', 'Remarks', style.blue);
+      const second = append(data, 'row', {r: 2});
+      ['Saved Time', ...DISPLAY_FIELDS, ...COMMENT_FIELDS].forEach((label, index) =>
+        cell(second, col(index) + '2', label, index < 10 ? style.yellow : style.blue));
+      const merges = append(root, 'mergeCells', {count: 2});
+      append(merges, 'mergeCell', {ref: 'K1:O1'});
+      append(merges, 'mergeCell', {ref: 'P1:P2'});
+    }
+    const {data, legacy} = this.checkLayout(sheet);
+    if (legacy) this.migrateWaferColumn(sheet, data);
+    const number = nodes(data, 'row').reduce((last, row) => Math.max(last, +row.getAttribute('r')), 2) + 1;
+    if (number > 1048576) throw new Error('This worksheet has reached the Excel row limit.');
+    const row = append(data, 'row', {r: number});
+    const [h, m, s] = time.split(':').map(Number);
+    if (style.time === undefined) cell(row, 'A' + number, time);
+    else cell(row, 'A' + number, (h * 3600 + m * 60 + s) / 86400, style.time);
+    this.writeValues(row, values, style.holdWrap);
+    if (owner) {
+      this.ensureOwnershipColumn(sheet, data);
+      cell(row, OWNER_COLUMN + number, owner + ':' + crypto.randomUUID());
+    }
+    const dimension = nodes(sheet.doc, 'dimension')[0];
+    if (dimension) {
+      const previous = dimension.getAttribute('ref').split(':');
+      const end = previous.at(-1).match(/^([A-Z]+)([0-9]+)$/);
+      if (end && +end[2] < number) {
+        const column = owner && (end[1].length === 1 && end[1] < OWNER_COLUMN) ? OWNER_COLUMN : end[1];
+        dimension.setAttribute('ref', previous[0] + ':' + column + number);
+      }
+    }
+    await this.writeSheet(sheet);
+  }
+  ensureOwnershipColumn(sheet, data) {
+    const header = nodes(data, 'row').find(row => row.getAttribute('r') === '2');
+    const headerCells = nodes(header, 'c');
+    const marker = headerCells.find(entry => entry.getAttribute('r') === OWNER_COLUMN + '2');
+    if (this.value(marker) === 'Lot Entry record') return;
+    const ownership = nodes(data, 'c').filter(entry => /^Q[0-9]+$/.test(entry.getAttribute('r')));
+    if (ownership.some(entry => this.value(entry) !== '' || nodes(entry, 'f').length)) {
+      throw new Error('Column Q is already in use on this worksheet. It is needed to record who submitted a row.');
+    }
+    marker?.remove();
+    const afterMarker = headerCells.find(entry => /^(?:[R-Z]|[A-Z]{2,})2$/.test(entry.getAttribute('r')));
+    cell(header, OWNER_COLUMN + '2', 'Lot Entry record');
+    if (afterMarker) header.insertBefore(header.lastElementChild, afterMarker);
+    const root = sheet.doc.documentElement;
+    let widths = nodes(root, 'cols')[0];
+    if (!widths) {
+      widths = append(root, 'cols');
+      root.insertBefore(widths, data);
+    }
+    const after = nodes(widths, 'col').find(column => +column.getAttribute('min') > 17);
+    const existing = nodes(widths, 'col').find(column =>
+      +column.getAttribute('min') <= 17 && +column.getAttribute('max') >= 17);
+    if (existing) {
+      const min = +existing.getAttribute('min');
+      const max = +existing.getAttribute('max');
+      if (min < 17) {
+        const before = existing.cloneNode(true);
+        before.setAttribute('max', 16);
+        widths.insertBefore(before, existing);
+      }
+      if (max > 17) {
+        const remainder = existing.cloneNode(true);
+        remainder.setAttribute('min', 18);
+        widths.insertBefore(remainder, existing.nextSibling);
+      }
+      existing.setAttribute('min', 17);
+      existing.setAttribute('max', 17);
+      existing.setAttribute('hidden', 1);
+    } else {
+      const hidden = append(widths, 'col', {min: 17, max: 17, hidden: 1});
+      widths.insertBefore(hidden, after || null);
+    }
+  }
+  writeValues(row, values, holdWrap) {
+    const number = row.getAttribute('r');
+    const entries = nodes(row, 'c');
+    const following = entries.find(entry => !/^[A-J][0-9]+$/.test(entry.getAttribute('r')));
+    displayValues(values).forEach((value, index) => {
+      if (value === '') return;
+      const address = col(index + 1) + number;
+      const before = entries.find(entry => entry.getAttribute('r') === address);
+      const style = DISPLAY_FIELDS[index] === 'HOLD' && value.includes('\n')
+        ? holdWrap ?? before?.getAttribute('s') ?? undefined : before?.getAttribute('s') ?? undefined;
+      if (DISPLAY_FIELDS[index] === 'HOLD' && value.includes('\n')) {
+        const height = Math.min(409, 16 * value.split('\n').length);
+        if (height > Number(row.getAttribute('ht') || 0)) {
+          row.setAttribute('ht', height);
+          row.setAttribute('customHeight', '1');
+        }
+      }
+      before?.remove();
+      cell(row, address, DISPLAY_FIELDS[index] === 'QTY' ? Number(value) : value, style);
+      if (following) row.insertBefore(row.lastElementChild, following);
+    });
+  }
+  async editRecord(original, owner, values) {
+    const sheet = await this.sheet(original.date);
+    if (!sheet) throw new Error('This submission is no longer in the workbook.');
+    const {data, legacy} = this.checkLayout(sheet);
+    const rows = nodes(data, 'row');
+    const row = rows.find(entry => this.readRecord(entry, original.date, legacy).id === original.id);
+    if (!row) throw new Error('This submission is no longer in the workbook.');
+    const current = this.readRecord(row, original.date, legacy);
+    if (!owner || current.owner !== owner) throw new Error('Only the submitter can edit this row.');
+    if (current.time !== original.time || JSON.stringify(current.values) !== JSON.stringify(original.values)) {
+      throw new Error('This row changed. Cancel the edit, refresh, and open it again.');
+    }
+    if (legacy) this.migrateWaferColumn(sheet, data);
+    this.writeValues(row, values, (await this.styles()).holdWrap);
+    await this.writeSheet(sheet);
+  }
+}
+
+let workbookHandle = null;
+let busy = false;
+let profileOwner = '';
+let editing = null;
+let currentSettings = null;
+
+function checkedValue(field, value) {
+  if (typeof value !== 'string' || value.length > 250 || /[\x00-\x1f\x7f\ufffe\uffff]/.test(value)) {
+    throw new Error(field + ' must be single-line text of at most 250 characters.');
+  }
+  value = value.trim();
+  if (field === 'QTY' && value) {
+    if (!/^[0-9]{1,15}$/.test(value)) throw new Error('QTY must be a nonnegative whole number with up to 15 digits.');
+    return String(Number(value));
+  }
+  return value;
+}
+
+function usesInsertionMapping(settings) {
+  return settings.Insertion.mode === 'dropdown' && Boolean(settings.Insertion.equivalents?.length);
+}
+
+function customerInsertion(settings, selection) {
+  return settings.Insertion.equivalents[settings.Insertion.options.indexOf(selection)] || '';
+}
+
+function usesHoldGroups(settings) {
+  return settings.Insertion.mode === 'dropdown' && Boolean(settings.Insertion.holdGroups);
+}
+
+function holdChoices(settings, insertion) {
+  if (usesHoldGroups(settings)) {
+    return Object.hasOwn(settings.Insertion.holdGroups, insertion) ? settings.Insertion.holdGroups[insertion] : [];
+  }
+  return settings.HOLD.options.map((label, index) => [label, settings.HOLD.equivalents?.[index] ?? label]);
+}
+
+function holdValue(settings, insertion, selected) {
+  if (!usesHoldGroups(settings) && settings.HOLD.mode !== 'dropdown') {
+    return validatedEntry('HOLD', selected, settings.HOLD);
+  }
+  const labels = Array.isArray(selected) ? selected : selected ? [selected] : [];
+  if (!labels.length) throw new Error('Select at least one HOLD option.');
+  const choices = new Map(holdChoices(settings, insertion));
+  const equivalents = [...new Set(labels)].map(label => {
+    if (!choices.has(label)) throw new Error('Choose HOLD options available for this Insertion.');
+    return choices.get(label);
+  });
+  const result = equivalents.join('\n');
+  if (result.length > 32767) throw new Error('Select fewer HOLD options. The Excel cell is full.');
+  return result;
+}
+
+function prefixHold(hold, waferId) {
+  const value = hold.split('\n').map(line => waferId + ': ' + line).join('\n');
+  if (value.length > 32767) throw new Error('Select fewer HOLD options. The Excel cell is full.');
+  return value;
+}
+
+function originalHold(hold, waferId) {
+  const prefix = waferId + ': ';
+  const lines = hold.split('\n');
+  if (!waferId || !lines.every(line => line.startsWith(prefix))) return hold;
+  return lines.map(line => line.slice(prefix.length)).join('\n');
+}
+
+function combinedWaferId(lot, wafer) {
+  const lotId = String(lot).trim();
+  const waferId = String(wafer).trim();
+  return lotId.length > 3 && lotId.endsWith('.00') && waferId ? lotId.slice(0, -2) + waferId : '';
+}
+
+function displayValues(values, waferId = combinedWaferId(values[LOT_INDEX], values[WAFER_INDEX])) {
+  const display = [...values];
+  display.splice(WAFER_INDEX + 1, 0, waferId);
+  return display;
+}
+
+function matchesFormat(input, pattern, allowAlphanumeric) {
+  const format = Array.from(pattern);
+  return input.length === format.length && format.every((character, index) => {
+    if (character === 'A') return /^[a-z]$/i.test(input[index]);
+    if (character === '9') return /^[0-9]$/.test(input[index]);
+    if (allowAlphanumeric && character === 'X') return /^[a-z0-9]$/i.test(input[index]);
+    return input[index] === character;
+  });
+}
+
+function validatedEntry(field, value, config) {
+  const normalized = checkedValue(field, value);
+  if (!normalized) throw new Error(field + ' is required.');
+  if (field === 'LOT_NO' && (normalized.length <= 3 || !normalized.endsWith('.00'))) {
+    throw new Error('LOT_NO must end in .00.');
+  }
+  if (config.mode === 'manual' && config.format) {
+    const input = Array.from(value.trim());
+    const lot = field === 'LOT_NO';
+    const formats = lot ? optionLines(config.format) : [config.format];
+    if (!formats.some(format => matchesFormat(input, format, lot))) {
+      throw new Error('Expected format: ' + formats.join(' or '));
+    }
+  }
+  if (config.mode === 'fixed' && normalized !== config.options[0]) {
+    throw new Error('The fixed value for ' + field + ' changed. Refresh and try again.');
+  }
+  if (config.mode === 'dropdown') {
+    const option = config.options.indexOf(normalized);
+    if (option < 0) throw new Error('Choose a current option for ' + field + '.');
+    if (field === 'HOLD' && config.equivalents) return config.equivalents[option];
+  }
+  return normalized;
+}
+
+async function passwordHash(password, salt) {
+  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const hash = await crypto.subtle.deriveBits({
+    name: 'PBKDF2', salt: new Uint8Array(salt), iterations: 250000, hash: 'SHA-256'
+  }, key, 256);
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function createAdminCredential(password) {
+  if (typeof password !== 'string' || !password.length) throw new Error('Enter an admin password.');
+  const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)));
+  return {salt, hash: await passwordHash(password, salt)};
+}
+
+async function replaceBook(handle, original, blob) {
+  const current = await handle.getFile();
+  if (current.size !== original.size || current.lastModified !== original.lastModified) {
+    throw new Error('The workbook changed during this save. Refresh and try again when it is your turn.');
+  }
+  if (blob.size > MAX_BYTES) throw new Error('Saving would exceed the 50 MB workbook limit.');
+  const writer = await handle.createWritable({mode: 'exclusive'});
+  try {
+    const beforeWrite = await handle.getFile();
+    if (beforeWrite.size !== original.size || beforeWrite.lastModified !== original.lastModified) {
+      throw new Error('The workbook changed during this save. Refresh and try again when it is your turn.');
+    }
+    await writer.write(blob);
+    await writer.close();
+  } catch (error) {
+    await writer.abort().catch(() => {});
+    throw error;
+  }
+}
+
+async function request(url, data, password) {
+  const handle = workbookHandle;
+  if (!handle) throw new Error('Connect the shared workbook first.');
+  const writes = url === '/api/submissions' || url === '/api/edit' || url === '/api/admin/settings' || url === '/api/admin/setup' || url === '/api/admin/change-password';
+  if (writes && busy) throw new Error('A save is already in progress on this page.');
+  if (writes) busy = true;
+  try {
+    const file = await handle.getFile();
+    const book = await WorkbookFile.open(file);
+    const {config, auth, masterPath} = await book.preferences();
+    const stamp = dateAndTime();
+    if (url === '/api/today') {
+      return {date: stamp.date, rows: await book.today(stamp.date), fields: FIELDS, settings: config,
+        adminConfigured: Boolean(auth), masterPath};
+    }
+    if (url === '/api/history') {
+      const {startDate = '', endDate = ''} = data || {};
+      checkDateRange(startDate, endDate);
+      return {rows: await book.history(startDate, endDate), fields: FIELDS, settings: config};
+    }
+    if (url === '/api/submissions' || url === '/api/edit') {
+      const entries = url === '/api/edit' ? data.entries : data;
+      const insertion = validatedEntry('Insertion', entries.Insertion, config.Insertion);
+      const values = FIELDS.map(field => {
+        if (field === 'Insertion') return insertion;
+        if (field === 'HOLD') return holdValue(config, insertion, entries.HOLD);
+        if (field === 'Customer Insertion' && usesInsertionMapping(config)) {
+          const equivalent = customerInsertion(config, insertion);
+          if (!equivalent) throw new Error('Select an Insertion with a Customer Insertion equivalent.');
+          return equivalent;
+        }
+        return validatedEntry(field, entries[field], config[field]);
+      });
+      const waferId = combinedWaferId(values[LOT_INDEX], values[WAFER_INDEX]);
+      values[HOLD_INDEX] = prefixHold(values[HOLD_INDEX], waferId);
+      if (!profileOwner) throw new Error('Edge could not store your submitter identity. Allow browser storage and reconnect.');
+      if (url === '/api/edit') await book.editRecord(data.original, profileOwner, values);
+      else await book.add(stamp.date, stamp.time, values, profileOwner);
+      await replaceBook(handle, file, book.zip.blob());
+      return {date: data.original?.date ?? stamp.date, time: data.original?.time ?? stamp.time, values};
+    }
+    const setup = url === '/api/admin/setup';
+    if (setup || url === '/api/admin/change-password') {
+      if (setup && auth) throw new Error('The admin password has already been set.');
+      if (!setup) {
+        if (!auth || await passwordHash(password, auth.salt) !== auth.hash) throw new Error('Incorrect current password.');
+        if (data.next !== data.confirm) throw new Error('The new passwords do not match.');
+      }
+      const credential = await createAdminCredential(setup ? password : data.next);
+      await book.savePreferences({config, auth: credential, masterPath});
+      await replaceBook(handle, file, book.zip.blob());
+      return {ok: true};
+    }
+    if (!auth || await passwordHash(password, auth.salt) !== auth.hash) throw new Error('Incorrect admin password.');
+    if (url === '/api/admin/check') return {ok: true};
+    if (url === '/api/admin/export') return {...config, masterPath};
+    const nextMasterPath = checkedMasterPath(data.masterPath ?? masterPath);
+    for (const field of FIELDS) {
+      const prior = config[field];
+      const {mode, options} = data[field];
+      const choices = options.map(option => checkedValue(field, option));
+      if (mode === 'fixed' && (choices.length !== 1 || !choices[0])) {
+        throw new Error('Enter exactly one fixed value for ' + field + '.');
+      }
+      if (!['manual', 'dropdown', 'fixed'].includes(mode) || choices.length > 200 ||
+          (mode === 'dropdown' && !choices.length) || new Set(choices).size !== choices.length) {
+        throw new Error(field + ' needs up to 200 unique choices and at least one choice in dropdown mode.');
+      }
+      config[field] = {mode, options: choices};
+      const input = data[field].format ?? prior.format ?? '';
+      const formats = field === 'LOT_NO' ? optionLines(input) : [input];
+      if (formats.length > 32 || formats.some(pattern => checkedValue('Format', pattern).length > 80)) {
+        throw new Error(field === 'LOT_NO' ? 'Enter up to 32 LOT_NO patterns of 80 characters or fewer per pattern.'
+          : 'Format rules must be 80 characters or shorter.');
+      }
+      const format = formats.join('\n').trim();
+      if (field === 'LOT_NO' && mode !== 'manual' && choices.some(value => !value.endsWith('.00') || value.length <= 3)) {
+        throw new Error('Every LOT_NO option must end in .00.');
+      }
+      if (mode === 'manual' && format) config[field].format = format;
+      if (field === 'HOLD' && mode === 'dropdown') {
+        const unchangedLegacy = prior.mode === 'dropdown' && !prior.equivalents &&
+          JSON.stringify(prior.options) === JSON.stringify(choices);
+        const equivalents = (data[field].equivalents || []).map(value => checkedValue(field, value));
+        if (unchangedLegacy && !equivalents.some(Boolean)) continue;
+        if (equivalents.length !== choices.length || equivalents.some(value => !value)) {
+          throw new Error('Enter an equivalent value for every HOLD option.');
+        }
+        config.HOLD.equivalents = equivalents;
+      }
+      if (field === 'Insertion' && mode === 'dropdown') {
+        const equivalents = (data[field].equivalents || []).map(value => checkedValue('Customer Insertion', value));
+        if (equivalents.some(Boolean)) {
+          if (equivalents.length !== choices.length || equivalents.some(value => !value)) {
+            throw new Error('Enter a Customer Insertion equivalent for every Insertion option.');
+          }
+          config.Insertion.equivalents = equivalents;
+        }
+        const groups = data[field].holdGroups ?? prior.holdGroups ?? {};
+        if (Object.values(groups).some(group => group.length)) {
+          config.Insertion.holdGroups = Object.fromEntries(choices.map(insertion => {
+            const group = Object.hasOwn(groups, insertion) ? groups[insertion] : [];
+            const pairs = group.map(([label, code]) => [checkedValue('HOLD label', label), checkedValue('HOLD equivalent', code)]);
+            if (!pairs.length || pairs.length > 200 || pairs.some(([label, code]) => !label || !code) ||
+                new Set(pairs.map(([label]) => label)).size !== pairs.length) {
+              throw new Error('For Insertion ' + insertion + ', enter 1–200 unique HOLD labels with their equivalent values.');
+            }
+            return [insertion, pairs];
+          }));
+        }
+      }
+    }
+    await book.savePreferences({config, auth, masterPath: nextMasterPath});
+    await replaceBook(handle, file, book.zip.blob());
+    return {ok: true};
+  } finally {
+    if (writes) busy = false;
+  }
+}
+
+function checkedMasterPath(value) {
+  const path = value.trim();
+  if (path && !/^(?:\\\\[^\\]+\\[^\\]+\\|[a-z]:\\)(?:[^\\]+\\)*[^\\]+\.xlsx$/i.test(path)) {
+    throw new Error('Enter the full Windows path, including the .xlsx filename.');
+  }
+  return path;
+}
+
+function verifyWorkbookName(handle) {
+  const expected = embeddedMasterPath.split('\\').at(-1);
+  if (expected && handle.name.toLowerCase() !== expected.toLowerCase()) {
+    throw new Error('Select the configured master workbook: ' + expected);
+  }
+}
+
+const workbookKey = embeddedMasterPath ? 'path:' + embeddedMasterPath.toLowerCase() : 'page:' + location.href;
+let rememberedHandle = null;
+const writePermission = {mode: 'readwrite'};
+const connectButton = $('connect');
+
+async function workbookStorage(mode, operation) {
+  const db = await new Promise((resolve, reject) => {
+    const open = indexedDB.open('LotEntryConnections', 1);
+    open.onupgradeneeded = () => open.result.createObjectStore('workbooks');
+    open.onsuccess = () => resolve(open.result);
+    open.onerror = () => reject(open.error);
+    open.onblocked = () => reject(new Error('Workbook storage is blocked.'));
+  });
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction('workbooks', mode);
+      const result = operation(transaction.objectStore('workbooks'));
+      transaction.oncomplete = () => resolve(result.result);
+      transaction.onabort = () => reject(transaction.error);
+      transaction.onerror = () => reject(transaction.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+function rememberedWorkbook(handle) {
+  return workbookStorage(handle ? 'readwrite' : 'readonly',
+    store => handle ? store.put(handle, workbookKey) : store.get(workbookKey));
+}
+
+async function loadProfileOwner() {
+  const key = 'submitter-identity';
+  const secret = await workbookStorage('readwrite', store => {
+    const read = store.get(key);
+    read.onsuccess = () => {
+      if (!read.result) store.put(crypto.randomUUID(), key);
+    };
+    return read;
+  }) || await workbookStorage('readonly', store => store.get(key));
+  if (!secret) throw new Error('Could not create a browser identity.');
+  const hash = await crypto.subtle.digest('SHA-256', encoder.encode(secret));
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function useWorkbook(handle) {
+  verifyWorkbookName(handle);
+  const book = await WorkbookFile.open(await handle.getFile());
+  await book.preferences();
+  await book.today(dateAndTime().date);
+  if (!profileOwner) profileOwner = await loadProfileOwner().catch(() => '');
+  if (editing && workbookHandle !== handle) stopEditing();
+  workbookHandle = handle;
+  $('workbookName').textContent = handle.name;
+  $('openAdmin').disabled = false;
+  connectButton.textContent = 'Connect Workbook';
+  status('tableStatus', '');
+  await refresh();
+}
+
+async function restoreWorkbook() {
+  if (embeddedMasterPath) {
+    $('masterPathHint').hidden = false;
+    $('masterPathHint').textContent = 'Master workbook: ' + embeddedMasterPath;
+  }
+  connectButton.disabled = true;
+  try {
+    rememberedHandle = await rememberedWorkbook();
+    if (!rememberedHandle) return;
+    verifyWorkbookName(rememberedHandle);
+    if (await rememberedHandle.queryPermission(writePermission) === 'granted') {
+      await useWorkbook(rememberedHandle);
+      rememberedHandle = null;
+    } else {
+      connectButton.textContent = 'Reconnect';
+      $('workbookName').textContent = 'Reconnect to allow access to ' + rememberedHandle.name + '.';
+    }
+  } catch {
+    rememberedHandle = null;
+  } finally {
+    connectButton.disabled = false;
+  }
+}
+
+connectButton.addEventListener('click', async () => {
+  if (busy) return;
+  connectButton.disabled = true;
+  const reconnecting = !!rememberedHandle;
+  try {
+    if (!window.showOpenFilePicker || !window.crypto?.subtle || !window.CompressionStream) {
+      throw new Error('Open this HTML file directly in a current desktop Edge or Chrome browser that allows file access.');
+    }
+    const [handle] = reconnecting ? [rememberedHandle] : await showOpenFilePicker({
+      id: 'lot-entry-master',
+      types: [{description: 'Excel workbook', accept: {[XLSX_TYPE]: ['.xlsx']}}],
+      excludeAcceptAllOption: true
+    });
+    verifyWorkbookName(handle);
+    if (await handle.requestPermission(writePermission) !== 'granted') {
+      throw new Error('Allow write access before connecting the workbook.');
+    }
+    await useWorkbook(handle);
+    rememberedHandle = null;
+    try {
+      await rememberedWorkbook(handle);
+    } catch {
+      status('tableStatus', 'Workbook connected. This browser could not remember it for next time.');
+    }
+  } catch (error) {
+    if (reconnecting) {
+      rememberedHandle = null;
+      connectButton.textContent = 'Connect Workbook';
+      $('workbookName').textContent = 'Select the workbook again to connect.';
+    }
+    if (error.name !== 'AbortError') status('tableStatus', error.message, true);
+  } finally {
+    connectButton.disabled = false;
+  }
+});
+
+function drawFields(settings) {
+  const signature = JSON.stringify(settings);
+  if (signature === configSignature) return;
+  const previous = new FormData($('entry'));
+  $('fields').replaceChildren();
+  currentSettings = settings;
+  for (const field of fieldNames) {
+    const fieldConfig = settings[field];
+    const derived = field === 'Customer Insertion' && usesInsertionMapping(settings);
+    const label = element('label', field);
+    if (field === 'HOLD') label.className = 'hold-field';
+    const multiple = field === 'HOLD' && (usesHoldGroups(settings) || fieldConfig.mode === 'dropdown');
+    const control = element(multiple || (!derived && fieldConfig.mode === 'dropdown') ? 'select' : 'input');
+    control.name = field;
+    if (multiple) {
+      control.multiple = true;
+      control.size = 7;
+    } else if (control.tagName === 'SELECT') {
+      for (const value of ['', ...fieldConfig.options]) {
+        const option = element('option', value || 'Select an option');
+        option.value = value;
+        control.append(option);
+      }
+    } else {
+      control.maxLength = 250;
+      if (field === 'QTY') control.inputMode = 'numeric';
+    }
+    const oldValue = previous.get(field) || '';
+    if (!multiple) {
+      if (derived) {
+        control.readOnly = true;
+      } else if (fieldConfig.mode === 'fixed') {
+        control.readOnly = true;
+        control.defaultValue = fieldConfig.options[0];
+      } else if (control.tagName !== 'SELECT' || fieldConfig.options.includes(oldValue)) {
+        control.value = oldValue;
+      }
+    }
+    control.required = true;
+    const error = element('small');
+    error.id = 'entry-error-' + fieldNames.indexOf(field);
+    error.className = 'field-error';
+    error.hidden = true;
+    control.setAttribute('aria-describedby', error.id);
+    control.addEventListener('input', () => {
+      validateControl(control);
+      if (field === 'LOT_NO' || field === 'Wafer ID') syncWaferId();
+      if (field === 'Insertion') {
+        syncCustomerInsertion();
+        if (usesInsertionMapping(settings)) validateControl($('entry').elements.namedItem('Customer Insertion'));
+        if (usesHoldGroups(settings)) {
+          updateHoldChoices();
+          validateControl($('entry').elements.namedItem('HOLD'));
+        }
+      }
+    });
+    label.append(control, error);
+    if (multiple) label.append(element('small', 'Use Ctrl+click to select multiple choices.'));
+    if (field === 'LOT_NO') label.append(element('small', 'Must end in .00. Example: A1B2C3.00.'));
+    $('fields').append(label);
+    if (field === 'Wafer ID') {
+      const combinedLabel = element('label', 'Wafer ID');
+      const combined = element('input');
+      combined.id = 'combinedWaferId';
+      combined.readOnly = true;
+      combinedLabel.append(combined);
+      $('fields').append(combinedLabel);
+    }
+  }
+  syncCustomerInsertion();
+  syncWaferId();
+  updateHoldChoices(previous.getAll('HOLD'));
+  configSignature = signature;
+}
+function syncWaferId() {
+  const fields = $('entry').elements;
+  const combined = $('combinedWaferId');
+  const lot = fields.namedItem('LOT_NO').value;
+  const wafer = fields.namedItem('Wafer ID').value;
+  try {
+    validatedEntry('LOT_NO', lot, currentSettings.LOT_NO);
+    combined.value = combinedWaferId(lot, wafer);
+  } catch {
+    combined.value = '';
+  }
+}
+
+function syncCustomerInsertion() {
+  if (!currentSettings || !usesInsertionMapping(currentSettings)) return;
+  const fields = $('entry').elements;
+  fields.namedItem('Customer Insertion').value = customerInsertion(currentSettings, fields.namedItem('Insertion').value);
+}
+
+function updateHoldChoices(selected = []) {
+  const fields = $('entry').elements;
+  const hold = fields.namedItem('HOLD');
+  if (!hold?.multiple) return;
+  const insertion = fields.namedItem('Insertion').value;
+  hold.replaceChildren();
+  for (const [label] of holdChoices(currentSettings, insertion)) {
+    const option = element('option', label);
+    option.value = label;
+    option.selected = selected.includes(label);
+    hold.append(option);
+  }
+}
+
+function controlValue(control) {
+  return control.multiple ? Array.from(control.selectedOptions, option => option.value) : control.value;
+}
+
+function validateControl(control) {
+  let message = '';
+  try {
+    const config = control.name === 'Customer Insertion' && usesInsertionMapping(currentSettings)
+      ? {mode: 'manual'} : currentSettings[control.name];
+    if (control.name === 'HOLD') {
+      holdValue(currentSettings, $('entry').elements.namedItem('Insertion').value, controlValue(control));
+    } else {
+      validatedEntry(control.name, control.value, config);
+    }
+  } catch (error) {
+    message = error.message;
+  }
+  const detail = $(control.getAttribute('aria-describedby'));
+  detail.textContent = message;
+  detail.hidden = !message;
+  control.classList.toggle('entry-invalid', Boolean(message));
+  control.setAttribute('aria-invalid', Boolean(message));
+  return !message;
+}
+
+function clearFieldErrors() {
+  for (const control of $('fields').querySelectorAll('input[name],select[name]')) {
+    $(control.getAttribute('aria-describedby')).hidden = true;
+    control.classList.remove('entry-invalid');
+    control.removeAttribute('aria-invalid');
+  }
+}
+
+function stopEditing() {
+  editing = null;
+  $('entry').reset();
+  syncWaferId();
+  syncCustomerInsertion();
+  updateHoldChoices();
+  clearFieldErrors();
+  $('entryTitle').textContent = 'New submission';
+  $('save').textContent = 'Save submission';
+  $('cancelEdit').hidden = true;
+}
+
+function startEditing(record) {
+  if ($('entry').dataset.saving === 'true') return;
+  editing = record;
+  clearFieldErrors();
+  const form = $('entry');
+  for (const [index, field] of FIELDS.entries()) {
+    const control = form.elements.namedItem(field);
+    if (control.readOnly) continue;
+    const savedValue = String(record.values[index] ?? '');
+    const value = field === 'HOLD'
+      ? originalHold(savedValue, record.waferId || combinedWaferId(record.values[LOT_INDEX], record.values[WAFER_INDEX]))
+      : savedValue;
+    if (control.multiple) {
+      const insertion = form.elements.namedItem('Insertion').value;
+      const choices = holdChoices(currentSettings, insertion);
+      const selected = [];
+      for (const code of value.split('\n')) {
+        const match = choices.find(([label, equivalent]) => equivalent === code && !selected.includes(label));
+        if (match) selected.push(match[0]);
+      }
+      updateHoldChoices(selected);
+      continue;
+    }
+    control.value = value;
+    if (control.tagName === 'SELECT' && !control.value) control.value = '';
+  }
+  syncCustomerInsertion();
+  syncWaferId();
+  $('entryTitle').textContent = 'Edit submission';
+  $('save').textContent = 'Save changes';
+  $('cancelEdit').hidden = false;
+  status('saveStatus', 'Editing the submission from ' + record.date + ' at ' + record.time + '.');
+  form.querySelector('input:not([readonly]), select')?.focus();
+}
+
+$('cancelEdit').addEventListener('click', () => {
+  stopEditing();
+  status('saveStatus', '');
+});
+
+function checkDateRange(startDate, endDate) {
+  if ([startDate, endDate].some(date => date && !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
+    throw new Error('Enter valid start and end dates.');
+  }
+  if (startDate && endDate && endDate < startDate) {
+    throw new Error('End date must be on or after the start date.');
+  }
+}
+
+for (const id of ['startDate', 'endDate']) {
+  $(id).addEventListener('click', event => {
+    const input = event.currentTarget;
+    if (!input.showPicker) return;
+    try {
+      input.showPicker();
+      event.preventDefault();
+    } catch {
+      // The native icon and keyboard input remain available.
+    }
+  });
+}
+
+let appliedRange = null;
+$('refreshRows').addEventListener('click', async () => {
+  $('submissionBanner').hidden = true;
+  const startDate = $('startDate').value;
+  const endDate = $('endDate').value;
+  try {
+    checkDateRange(startDate, endDate);
+  } catch (error) {
+    status('tableStatus', error.message, true);
+    $('tableStatus').dataset.source = 'date-range';
+    return;
+  }
+  if ($('tableStatus').dataset.source === 'date-range') status('tableStatus', '');
+  appliedRange = {startDate, endDate};
+  $('refreshRows').disabled = true;
+  try {
+    await refresh();
+  } finally {
+    $('refreshRows').disabled = false;
+  }
+});
+async function refresh() {
+  if (!workbookHandle) return;
+  const number = ++refreshNumber;
+  const range = appliedRange;
+  const filtered = range && (range.startDate || range.endDate);
+  try {
+    const data = await request(range ? '/api/history' : '/api/today', range);
+    if (number !== refreshNumber) return;
+    fieldNames = data.fields;
+    drawFields(data.settings);
+    $('tableHeading').textContent = filtered ? 'Submissions by Date' : range ? 'All Submissions' : 'Today’s Submissions';
+    let period = range ? '' : data.date;
+    if (filtered) {
+      const {startDate, endDate} = range;
+      period = startDate && endDate ? startDate + ' to ' + endDate
+        : startDate ? 'From ' + startDate : 'Through ' + endDate;
+    }
+    $('date').textContent = (period ? period + ' · ' : '') + data.rows.length + ' saved';
+    const heading = element('tr');
+    const labels = [...(range ? ['Saved Date'] : []), 'Saved Time', ...DISPLAY_FIELDS, 'Action'];
+    for (const field of labels) heading.append(element('th', field));
+    $('columns').replaceChildren(heading);
+    const rows = document.createDocumentFragment();
+    for (const record of data.rows) {
+      const row = element('tr');
+      const values = [...(range ? [record.date] : []), record.time, ...displayValues(record.values, record.waferId)];
+      for (const [index, value] of values.entries()) {
+        const entry = element('td', value ?? '');
+        if (index === values.length - 1) entry.className = 'hold-lines';
+        row.append(entry);
+      }
+      const action = element('td');
+      if (profileOwner && record.owner === profileOwner && record.id) {
+        const editButton = element('button', 'Edit');
+        editButton.type = 'button';
+        editButton.addEventListener('click', () => startEditing(record));
+        action.append(editButton);
+      }
+      row.append(action);
+      rows.append(row);
+    }
+    if (!data.rows.length) {
+      const row = element('tr');
+      const cell = element('td', filtered ? 'No submissions saved in this date range.' : range ? 'No submissions saved.' : 'No submissions saved today.');
+      cell.colSpan = labels.length;
+      cell.className = 'empty';
+      row.append(cell);
+      rows.append(row);
+    }
+    $('rows').replaceChildren(rows);
+    $('save').disabled = $('entry').dataset.saving === 'true';
+    $('export').disabled = false;
+    $('startDate').disabled = false;
+    $('endDate').disabled = false;
+    $('refreshRows').disabled = false;
+    if ($('tableStatus').dataset.error === 'true' && $('tableStatus').dataset.source === 'refresh') status('tableStatus', '');
+  } catch (error) {
+    if (number === refreshNumber) {
+      status('tableStatus', 'Could not refresh: ' + error.message, true);
+      $('tableStatus').dataset.source = 'refresh';
+    }
+  }
+}
+$('entry').addEventListener('submit', async event => {
+  event.preventDefault();
+  if ($('save').disabled) return;
+  $('submissionBanner').hidden = true;
+  const controls = Array.from($('fields').querySelectorAll('input[name],select[name]'));
+  const invalid = controls.filter(control => !validateControl(control));
+  if (invalid.length) {
+    status('saveStatus', 'Correct the highlighted fields before saving.', true);
+    invalid[0].focus();
+    return;
+  }
+  const values = Object.fromEntries(controls.map(control => [control.name, controlValue(control)]));
+  const original = editing;
+  $('cancelEdit').disabled = true;
+  $('entry').dataset.saving = 'true';
+  $('connect').disabled = true;
+  $('save').disabled = true;
+  try {
+    const saved = original ? await request('/api/edit', {original, entries: values})
+      : await request('/api/submissions', values);
+    stopEditing();
+    status('saveStatus', '');
+    showSubmissionSummary(saved, Boolean(original));
+    await refresh();
+  } catch (error) {
+    status('saveStatus', error.message, true);
+  } finally {
+    $('entry').dataset.saving = 'false';
+    $('cancelEdit').disabled = false;
+    $('connect').disabled = false;
+    $('save').disabled = false;
+  }
+});
+function showSubmissionSummary(record, updated) {
+  $('completionTitle').textContent = updated ? 'Changes saved' : 'Submission complete';
+  $('completionTime').textContent = 'Submitted ' + record.date;
+  const details = $('completionDetails');
+  details.replaceChildren();
+  const values = [record.time, ...displayValues(record.values)];
+  for (const [index, label] of ['Saved Time', ...DISPLAY_FIELDS].entries()) {
+    const group = element('div');
+    group.append(element('dt', label + ':'), element('dd', values[index]));
+    details.append(group);
+  }
+  $('submissionBanner').hidden = false;
+  $('completionTitle').focus();
+}
+
+$('dismissSummary').addEventListener('click', () => {
+  $('submissionBanner').hidden = true;
+  $('save').focus();
+});
+
+function download(file, name) {
+  const url = URL.createObjectURL(file);
+  const link = element('a');
+  link.href = url;
+  link.download = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function configuredHtml(config) {
+  const copy = htmlTemplate.cloneNode(true);
+  copy.querySelector('#embeddedSettings').textContent = JSON.stringify(config).replace(/</g, '\\u003c');
+  return '<!doctype html>\n' + copy.outerHTML;
+}
+
+$('downloadHtml').addEventListener('click', async () => {
+  const button = $('downloadHtml');
+  const token = adminToken;
+  button.disabled = true;
+  try {
+    const config = await request('/api/admin/export', {}, token);
+    if (!$('admin').open || adminToken !== token) return;
+    const file = new Blob([configuredHtml(config)], {type: 'text/html;charset=utf-8'});
+    download(file, 'Lot_Entry_Standalone_Configured.html');
+    status('adminStatus', 'HTML downloaded with saved settings.');
+  } catch (error) {
+    status('adminStatus', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('export').addEventListener('click', async () => {
+  $('export').disabled = true;
+  try {
+    const book = await WorkbookFile.open(await workbookHandle.getFile());
+    const start = $('startDate').value;
+    const end = $('endDate').value;
+    const prefix = start || end ? [start || 'Beginning', end || 'Latest'].join('_to_') + '_' : 'Copy_';
+    download(await book.exportRange(start, end), prefix + workbookHandle.name);
+    status('tableStatus', 'Excel copy downloaded.');
+  } catch (error) {
+    status('tableStatus', error.message, true);
+  } finally {
+    $('tableStatus').dataset.source = 'export';
+    $('export').disabled = false;
+  }
+});
+let needsAdminSetup = false;
+$('openAdmin').onclick = async () => {
+  $('openAdmin').disabled = true;
+  try {
+    const data = await request('/api/today');
+    needsAdminSetup = !data.adminConfigured;
+    $('adminHint').textContent = needsAdminSetup
+      ? 'Set an admin password before sharing the workbook with users.'
+      : '';
+    $('login').querySelector('button').textContent = needsAdminSetup ? 'Set admin password' : 'Sign in';
+    status('adminStatus', '');
+    $('admin').showModal();
+  } catch (error) {
+    status('tableStatus', error.message, true);
+  } finally {
+    $('openAdmin').disabled = false;
+  }
+};
+$('closeAdmin').onclick = () => $('admin').close();
+$('admin').addEventListener('close', () => {
+  adminToken = '';
+  $('login').reset();
+  $('login').hidden = false;
+  $('settings').hidden = true;
+  $('changePassword').reset();
+  $('changePassword').hidden = true;
+});
+$('openPasswordChange').addEventListener('click', () => {
+  $('changePassword').reset();
+  $('changePassword').hidden = false;
+  $('settings').hidden = true;
+  status('adminStatus', '');
+  $('currentPassword').focus();
+});
+$('cancelPassword').addEventListener('click', () => {
+  $('changePassword').reset();
+  $('changePassword').hidden = true;
+  $('settings').hidden = false;
+  status('adminStatus', '');
+  $('openPasswordChange').focus();
+});
+$('changePassword').addEventListener('submit', async event => {
+  event.preventDefault();
+  const signedIn = adminToken;
+  const current = $('currentPassword').value;
+  const next = $('newPassword').value;
+  const confirm = $('confirmPassword').value;
+  const save = $('savePassword');
+  save.disabled = true;
+  $('cancelPassword').disabled = true;
+  try {
+    await request('/api/admin/change-password', {next, confirm}, current);
+    if (!$('admin').open || adminToken !== signedIn) return;
+    adminToken = next;
+    $('changePassword').reset();
+    $('changePassword').hidden = true;
+    $('settings').hidden = false;
+    status('adminStatus', 'Admin password changed.');
+    $('openPasswordChange').focus();
+  } catch (error) {
+    if ($('admin').open && adminToken === signedIn) status('adminStatus', error.message, true);
+  } finally {
+    save.disabled = false;
+    $('cancelPassword').disabled = false;
+  }
+});
+$('login').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('login').querySelector('button');
+  const token = $('password').value;
+  button.disabled = true;
+  try {
+    if (needsAdminSetup) {
+      await request('/api/admin/setup', {}, token);
+      needsAdminSetup = false;
+    }
+    await request('/api/admin/check', {}, token);
+    const data = await request('/api/today');
+    if (!$('admin').open) return;
+    adminToken = token;
+    $('masterPath').value = data.masterPath;
+    $('settingsFields').replaceChildren();
+    for (const field of data.fields) {
+      const fieldset = element('fieldset');
+      fieldset.dataset.field = field;
+      fieldset.append(element('legend', field));
+      const mode = element('select');
+      for (const [value, title] of [['manual','Manual entry'], ['dropdown','Dropdown'], ['fixed','Fixed value']]) {
+        const option = element('option', title);
+        option.value = value;
+        mode.append(option);
+      }
+      mode.value = data.settings[field].mode;
+      const options = element('textarea');
+      options.rows = 3;
+      options.className = 'option-list';
+      options.value = data.settings[field].options.join('\n');
+      const modeLabel = element('label', 'Input type');
+      modeLabel.append(mode);
+      const optionsLabel = element('label');
+      const optionsCaption = element('span');
+      optionsLabel.append(optionsCaption, options);
+      const isLot = field === 'LOT_NO';
+      const formatLabel = element('label', isLot ? 'Format patterns (optional)' : 'Format pattern (optional)');
+      const pattern = element(isLot ? 'textarea' : 'input');
+      if (isLot) pattern.rows = 3;
+      pattern.className = 'format-pattern';
+      pattern.maxLength = isLot ? 2592 : 80;
+      pattern.value = data.settings[field].format || '';
+      formatLabel.append(pattern, element('small', isLot
+        ? 'One pattern per line. X = letter or digit, A = letter, 9 = digit. Example: XXXXXX.00.'
+        : 'A = letter, 9 = digit. Other characters are literal. Example: AA-9999.'));
+      const updateOptions = () => {
+        formatLabel.hidden = mode.value !== 'manual';
+        optionsLabel.hidden = mode.value === 'manual';
+        optionsCaption.textContent = mode.value === 'fixed' ? 'Fixed value' : 'Choices, one per line';
+        options.rows = mode.value === 'fixed' ? 1 : 3;
+      };
+      fieldset.append(modeLabel, optionsLabel, formatLabel);
+      if (field === 'HOLD' || field === 'Insertion') {
+        const equivalentFields = element('div');
+        equivalentFields.className = 'hold-equivalents';
+        const saved = data.settings[field];
+        const values = new Map(saved.options.map((choice, index) => [choice, saved.equivalents?.[index] || '']));
+        const holdGroups = new Map(Object.entries(saved.holdGroups || {}).map(([insertion, pairs]) =>
+          [insertion, pairs.map(pair => pair.join(' | ')).join('\n')]));
+        const renderEquivalents = () => {
+          equivalentFields.replaceChildren();
+          equivalentFields.hidden = mode.value !== 'dropdown';
+          if (equivalentFields.hidden) return;
+          if (field === 'Insertion') {
+            equivalentFields.append(element('small', 'Fill every equivalent to auto-fill Customer Insertion, or leave them all blank.'));
+          }
+          for (const choice of optionLines(options.value).slice(0, 200)) {
+            const caption = field === 'Insertion' ? 'Customer Insertion for ' : 'Equivalent value for ';
+            const label = element('label', caption + choice);
+            const input = element('input');
+            input.maxLength = 250;
+            input.value = values.get(choice) || '';
+            input.addEventListener('input', () => values.set(choice, input.value));
+            label.append(input);
+            equivalentFields.append(label);
+            if (field === 'Insertion') {
+              const group = element('label', 'HOLD choices for Insertion ' + choice);
+              group.className = 'hold-group';
+              const pairs = element('textarea');
+              pairs.rows = 3;
+              pairs.dataset.insertion = choice;
+              pairs.placeholder = 'Retest | RT1';
+              pairs.value = holdGroups.get(choice) || '';
+              pairs.addEventListener('input', () => holdGroups.set(choice, pairs.value));
+              group.append(pairs, element('small', 'Enter one Label | Equivalent pair per line.'));
+              equivalentFields.append(group);
+            }
+          }
+        };
+        options.addEventListener('input', renderEquivalents);
+        mode.addEventListener('change', renderEquivalents);
+        fieldset.append(equivalentFields);
+        renderEquivalents();
+      }
+      mode.addEventListener('change', updateOptions);
+      updateOptions();
+      $('settingsFields').append(fieldset);
+    }
+    $('login').reset();
+    $('login').hidden = true;
+    $('settings').hidden = false;
+    status('adminStatus', '');
+  } catch (error) {
+    status('adminStatus', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+function optionLines(text) {
+  return text.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+}
+
+$('settings').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = $('settings').querySelector('button');
+  const data = {masterPath: $('masterPath').value};
+  for (const fieldset of $('settingsFields').children) {
+    const field = fieldset.dataset.field;
+    const mode = fieldset.querySelector('select').value;
+    data[field] = {mode, options: optionLines(fieldset.querySelector('.option-list').value),
+      format: fieldset.querySelector('.format-pattern').value};
+    if ((field === 'HOLD' || field === 'Insertion') && mode === 'dropdown') {
+      data[field].equivalents = Array.from(fieldset.querySelectorAll('.hold-equivalents input'), input => input.value);
+    }
+    if (field === 'Insertion' && mode === 'dropdown') {
+      const groups = Array.from(fieldset.querySelectorAll('textarea[data-insertion]'), input =>
+        [input.dataset.insertion, optionLines(input.value).map(line => {
+          const separator = line.indexOf('|');
+          return separator < 0 ? [line, ''] : [line.slice(0, separator), line.slice(separator + 1)];
+        })]);
+      data.Insertion.holdGroups = Object.fromEntries(groups);
+    }
+  }
+  button.disabled = true;
+  try {
+    await request('/api/admin/settings', data, adminToken);
+    status('adminStatus', 'Settings saved. Download HTML to include the master workbook path.');
+    await refresh();
+  } catch (error) {
+    status('adminStatus', error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+restoreWorkbook();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>
